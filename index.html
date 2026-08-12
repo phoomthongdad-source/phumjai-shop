@@ -429,12 +429,12 @@ async function copyText(text){
   }
 }
 
-// สินค้าที่เพิ่มเข้าระบบภายใน 14 วัน ถือว่า "ใหม่" — คำนวณอัตโนมัติจาก created_at ไม่ต้องตั้งค่าเอง
-const NEW_WITHIN_DAYS = 14;
+// สินค้าที่เพิ่งกดเพิ่มเข้าระบบภายใน 24 ชั่วโมง ถือว่า "ใหม่" — คำนวณอัตโนมัติจาก created_at ไม่ต้องตั้งค่าเอง
+const NEW_WITHIN_HOURS = 24;
 function isProductNew(product){
   if (!product.created_at) return false;
   const ageMs = Date.now() - new Date(product.created_at).getTime();
-  return ageMs >= 0 && ageMs <= NEW_WITHIN_DAYS * 24 * 60 * 60 * 1000;
+  return ageMs >= 0 && ageMs <= NEW_WITHIN_HOURS * 60 * 60 * 1000;
 }
 
 // ---- Icons (no emoji — plain currentColor SVG marks) ----
@@ -948,14 +948,11 @@ function App(){
 
   const pickMain = (cat) => { setSelectedMain(cat); setSelectedSub(null); };
 
-  // สินค้าแนะนำ: ขายดี (ตั้งค่าโดยแอดมิน) มาก่อน ตามด้วยสินค้าใหม่ (คำนวณอัตโนมัติ) เรียงใหม่สุดก่อน
+  // แถบ "แนะนำ" แสดงเฉพาะสินค้าขายดี (ตั้งค่าโดยแอดมิน) — สินค้าใหม่ยังคงมีป้าย "ใหม่" บนการ์ดปกติ แต่ไม่โผล่ในแถบนี้
   const featuredProducts = useMemo(() => {
     return products
-      .filter(p => p.is_bestseller || isProductNew(p))
-      .sort((a, b) => {
-        if (!!b.is_bestseller !== !!a.is_bestseller) return b.is_bestseller ? 1 : -1;
-        return new Date(b.created_at) - new Date(a.created_at);
-      })
+      .filter(p => p.is_bestseller)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 12);
   }, [products]);
 
