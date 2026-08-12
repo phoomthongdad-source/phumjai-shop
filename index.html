@@ -69,9 +69,25 @@
 
   .container{ max-width: 960px; margin: 0 auto; padding: 18px 14px 0; }
 
-  .hero{ padding: 6px 2px 18px; }
+  .hero{ padding: 6px 2px 14px; }
   .hero h1{ font-size: 21px; font-weight: 600; margin: 0 0 4px; }
   .hero p{ font-size: 13.5px; color: var(--text-dim); margin:0; line-height:1.6; }
+
+  .cat-nav{ margin: 0 0 16px; }
+  .cat-row{
+    display:flex; gap:8px; overflow-x:auto; padding-bottom:2px;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .cat-row::-webkit-scrollbar{ display:none; }
+  .cat-row-sub{ margin-top:8px; }
+  .cat-chip{
+    flex-shrink:0; white-space:nowrap;
+    background: var(--bg-elev); border:1px solid var(--border); color: var(--text-dim);
+    border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight:600;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .cat-chip.active{ background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .cat-chip-sub{ font-size: 11.5px; padding: 6px 12px; }
 
   .state-box{
     text-align:center; padding: 60px 20px; color: var(--text-dim);
@@ -187,7 +203,9 @@
     font-size: 12.5px; color: var(--text-dim); line-height:1.6;
     background: var(--bg-elev-2); border: 1px solid var(--border);
     border-radius: 12px; padding: 10px 12px; margin-bottom: 14px;
+    display:flex; gap:8px; align-items:flex-start;
   }
+  .modal-note svg{ flex-shrink:0; margin-top:2px; color: var(--text-faint); }
   .modal-actions{ display:flex; gap:10px; }
   .btn-secondary{
     flex:1; background: var(--bg-elev-2); color: var(--text);
@@ -235,6 +253,25 @@ function formatDateTime(){
     year: "numeric", month: "short", day: "numeric",
     hour: "2-digit", minute: "2-digit"
   });
+}
+
+// ---- Icons (no emoji — plain currentColor SVG marks) ----
+function IconWarning(){
+  return (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3.5 L21.5 20 H2.5 Z" />
+      <line x1="12" y1="9.5" x2="12" y2="14" />
+      <circle cx="12" cy="17" r="0.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function IconPin(){
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21c-4-4.6-7-8.2-7-11.5A7 7 0 0 1 19 9.5C19 12.8 16 16.4 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.4" />
+    </svg>
+  );
 }
 
 // ---- Canvas order summary ----
@@ -422,7 +459,8 @@ function OrderModal({ items, total, imageUrl, onClose }){
           ? <img src={imageUrl} alt="สรุปคำสั่งซื้อ" />
           : <div className="state-box"><div className="spinner"></div>กำลังสร้างรูปภาพ...</div>}
         <div className="modal-note">
-          📌 ส่งรูปนี้มาที่ร้านผ่านช่องทางที่สะดวก (LINE / Facebook / Instagram) เพื่อยืนยันคำสั่งซื้อ แอปนี้ไม่มีระบบชำระเงินในตัว ทางร้านจะติดต่อกลับเพื่อนัดชำระเงินและจัดส่ง
+          <IconPin />
+          <span>ส่งรูปนี้มาที่ร้านผ่านช่องทางที่สะดวก (LINE / Facebook / Instagram) เพื่อยืนยันคำสั่งซื้อ แอปนี้ไม่มีระบบชำระเงินในตัว ทางร้านจะติดต่อกลับเพื่อนัดชำระเงินและจัดส่ง</span>
         </div>
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>ปิด</button>
@@ -439,31 +477,57 @@ function OrderModal({ items, total, imageUrl, onClose }){
 
 function App(){
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cart, setCart] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [orderImage, setOrderImage] = useState(null);
+  const [selectedMain, setSelectedMain] = useState(null);
+  const [selectedSub, setSelectedSub] = useState(null);
 
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await sb
-        .from("shop_products")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const [prodRes, catRes] = await Promise.all([
+        sb.from("shop_products").select("*").order("created_at", { ascending: true }),
+        sb.from("shop_categories").select("*").order("sort_order", { ascending: true }),
+      ]);
       if (!active) return;
-      if (error){
+      if (prodRes.error){
         setError("โหลดสินค้าไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง");
       } else {
-        setProducts(data || []);
+        setProducts(prodRes.data || []);
+      }
+      if (!catRes.error){
+        setCategories(catRes.data || []);
       }
       setLoading(false);
     })();
     return () => { active = false; };
   }, []);
+
+  const mainCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
+  const subCategoriesByParent = useMemo(() => {
+    const map = {};
+    categories.filter(c => c.parent_id).forEach(c => {
+      (map[c.parent_id] = map[c.parent_id] || []).push(c);
+    });
+    return map;
+  }, [categories]);
+
+  const activeSubCategories = selectedMain ? (subCategoriesByParent[selectedMain.id] || []) : [];
+
+  const filteredProducts = useMemo(() => {
+    if (!selectedMain) return products;
+    if (selectedSub) return products.filter(p => p.category_id === selectedSub.id);
+    const allowedIds = new Set([selectedMain.id, ...activeSubCategories.map(c => c.id)]);
+    return products.filter(p => p.category_id && allowedIds.has(p.category_id));
+  }, [products, selectedMain, selectedSub, activeSubCategories]);
+
+  const pickMain = (cat) => { setSelectedMain(cat); setSelectedSub(null); };
 
   const inc = (p) => {
     setCart(prev => {
@@ -509,7 +573,7 @@ function App(){
           <div className="logo"><img src={LOGO_URI} alt="Phumjai" /></div>
           <div>
             <div className="brand-name">{SHOP_NAME}</div>
-            <div className="brand-tag">สัตว์เลี้ยง · สัตว์แปลก · ของใช้สัตว์เลี้ยง</div>
+            <div className="brand-tag">BIOACTIVE · NATURE · LIFE</div>
           </div>
         </div>
       </div>
@@ -520,6 +584,25 @@ function App(){
           <p>กดปุ่ม + เพื่อเพิ่มจำนวน แล้วกด "ยืนยันคำสั่งซื้อ" ด้านล่างเพื่อสร้างรูปสรุป ส่งให้ร้านทาง LINE/Facebook/Instagram</p>
         </div>
 
+        {!loading && !error && mainCategories.length > 0 && (
+          <div className="cat-nav">
+            <div className="cat-row">
+              <button className={"cat-chip" + (!selectedMain ? " active" : "")} onClick={() => pickMain(null)}>ทั้งหมด</button>
+              {mainCategories.map(c => (
+                <button key={c.id} className={"cat-chip" + (selectedMain && selectedMain.id === c.id ? " active" : "")} onClick={() => pickMain(c)}>{c.name}</button>
+              ))}
+            </div>
+            {activeSubCategories.length > 0 && (
+              <div className="cat-row cat-row-sub">
+                <button className={"cat-chip cat-chip-sub" + (!selectedSub ? " active" : "")} onClick={() => setSelectedSub(null)}>ทั้งหมด</button>
+                {activeSubCategories.map(c => (
+                  <button key={c.id} className={"cat-chip cat-chip-sub" + (selectedSub && selectedSub.id === c.id ? " active" : "")} onClick={() => setSelectedSub(c)}>{c.name}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {loading && (
           <div className="state-box">
             <div className="spinner"></div>
@@ -529,7 +612,7 @@ function App(){
 
         {!loading && error && (
           <div className="state-box">
-            <div className="big">⚠️</div>
+            <div className="big"><IconWarning /></div>
             {error}
           </div>
         )}
@@ -541,9 +624,16 @@ function App(){
           </div>
         )}
 
-        {!loading && !error && products.length > 0 && (
+        {!loading && !error && products.length > 0 && filteredProducts.length === 0 && (
+          <div className="state-box">
+            <img className="big-logo" src={LOGO_URI} alt="" />
+            ไม่มีสินค้าในหมวดหมู่นี้
+          </div>
+        )}
+
+        {!loading && !error && filteredProducts.length > 0 && (
           <div className="grid">
-            {products.map(p => (
+            {filteredProducts.map(p => (
               <ProductCard
                 key={p.id}
                 product={p}
