@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Phumjai — หน้าร้าน</title>
+<meta name="description" content="ร้าน Phumjai — สัตว์เลี้ยง/สัตว์แปลก และของใช้สำหรับสัตว์เลี้ยง" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<style>
+  :root{
+    --bg: #0d0f13;
+    --bg-elev: #15181f;
+    --bg-elev-2: #1c202a;
+    --border: #2a2f3a;
+    --text: #f2f0ea;
+    --text-dim: #a8adb8;
+    --text-faint: #6c7280;
+    --gold: #d4af6a;
+    --gold-dim: #b3915a;
+    --danger: #e0685a;
+    --ok: #5ec98f;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 30px rgba(0,0,0,0.45);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(1200px 600px at 50% -10%, #1a1e27 0%, var(--bg) 55%) fixed;
+    color: var(--text);
+    font-family: 'Prompt', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding-bottom: calc(96px + var(--safe-bottom));
+  }
+  a{ color: inherit; }
+  img{ max-width: 100%; display:block; }
+  button{ font-family: inherit; cursor: pointer; }
+
+  .topbar{
+    position: sticky; top:0; z-index: 30;
+    background: rgba(13,15,19,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px calc(14px + env(safe-area-inset-top, 0px)*0);
+  }
+  .topbar-inner{
+    max-width: 960px; margin: 0 auto;
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo{
+    width:38px; height:38px; border-radius: 11px;
+    background: linear-gradient(145deg, #2a2f3a, #15181f);
+    border: 1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 19px;
+  }
+  .brand-name{ font-weight:600; font-size: 18px; letter-spacing: 0.3px; }
+  .brand-tag{ font-size: 11px; color: var(--text-faint); margin-top:1px; }
+
+  .container{ max-width: 960px; margin: 0 auto; padding: 18px 14px 0; }
+
+  .hero{ padding: 6px 2px 18px; }
+  .hero h1{ font-size: 21px; font-weight: 600; margin: 0 0 4px; }
+  .hero p{ font-size: 13.5px; color: var(--text-dim); margin:0; line-height:1.6; }
+
+  .state-box{
+    text-align:center; padding: 60px 20px; color: var(--text-dim);
+  }
+  .state-box .big{ font-size: 34px; margin-bottom: 10px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (min-width: 560px){ .grid{ grid-template-columns: repeat(3, 1fr); gap:16px; } }
+  @media (min-width: 860px){ .grid{ grid-template-columns: repeat(4, 1fr); } }
+
+  .card{
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display:flex; flex-direction:column;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .card-img{
+    aspect-ratio: 1 / 1;
+    background: var(--bg-elev-2);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .card-img img{ width:100%; height:100%; object-fit: cover; }
+  .card-img .placeholder{ font-size: 34px; opacity:0.35; }
+  .badge-out{
+    position:absolute; top:8px; left:8px;
+    background: rgba(224,104,90,0.15);
+    color: var(--danger);
+    border: 1px solid rgba(224,104,90,0.4);
+    font-size: 10.5px; font-weight:600;
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .card-body{ padding: 10px 11px 12px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .card-name{ font-size: 13.5px; font-weight:600; line-height:1.35; }
+  .card-desc{
+    font-size: 11.5px; color: var(--text-dim); line-height:1.5;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    min-height: 32px;
+  }
+  .card-price{ font-size: 15px; font-weight:700; color: var(--gold); margin-top:2px; }
+  .card-stock{ font-size: 10.5px; color: var(--text-faint); }
+
+  .stepper{
+    margin-top: auto; padding-top: 8px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap: 6px;
+  }
+  .stepper button{
+    width: 30px; height: 30px; border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev-2);
+    color: var(--text);
+    font-size: 16px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform .08s ease;
+  }
+  .stepper button:active{ transform: scale(0.9); }
+  .stepper button:disabled{ opacity: 0.3; cursor: not-allowed; }
+  .stepper .qty{ font-size: 14px; font-weight:600; min-width: 22px; text-align:center; }
+
+  .cartbar{
+    position: fixed; left:0; right:0; bottom:0; z-index: 40;
+    padding: 10px 14px calc(12px + var(--safe-bottom));
+    background: linear-gradient(180deg, rgba(13,15,19,0) 0%, rgba(13,15,19,0.97) 30%);
+  }
+  .cartbar-inner{
+    max-width: 960px; margin:0 auto;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 12px 14px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .cartbar-info .label{ font-size: 11px; color: var(--text-faint); }
+  .cartbar-info .value{ font-size: 16px; font-weight:700; color: var(--gold); }
+  .btn-primary{
+    background: linear-gradient(145deg, #e2c082, var(--gold));
+    color: #17140c; font-weight:700; font-size: 14px;
+    border: none; border-radius: 12px; padding: 12px 20px;
+    box-shadow: 0 6px 18px rgba(212,175,106,0.25);
+    white-space: nowrap;
+  }
+  .btn-primary:disabled{ opacity:0.35; box-shadow:none; cursor:not-allowed; }
+
+  .modal-overlay{
+    position: fixed; inset:0; z-index: 50;
+    background: rgba(6,7,9,0.78);
+    backdrop-filter: blur(3px);
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  @media (min-width: 640px){ .modal-overlay{ align-items:center; } }
+  .modal{
+    width:100%; max-width: 480px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 18px 18px calc(18px + var(--safe-bottom));
+    max-height: 92vh; overflow-y: auto;
+  }
+  @media (min-width: 640px){ .modal{ border-radius: 20px; } }
+  .modal h2{ font-size: 16.5px; margin: 0 0 12px; }
+  .modal img{ width:100%; border-radius: 12px; border:1px solid var(--border); margin-bottom: 14px; }
+  .modal-note{
+    font-size: 12.5px; color: var(--text-dim); line-height:1.6;
+    background: var(--bg-elev-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 14px;
+  }
+  .modal-actions{ display:flex; gap:10px; }
+  .btn-secondary{
+    flex:1; background: var(--bg-elev-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px; font-size: 13.5px; font-weight:600;
+  }
+  .modal-actions .btn-primary{ flex:1.4; text-align:center; }
+
+  .spinner{
+    width:28px; height:28px; border-radius:50%;
+    border: 3px solid var(--border); border-top-color: var(--gold);
+    animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .footer-note{
+    text-align:center; color: var(--text-faint); font-size: 11px;
+    padding: 26px 14px 10px;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef } = React;
+
+const SUPABASE_URL = "https://swkyygjrqftmmxnztdnn.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_bGu5-fBeHYLut9ufXfDTrQ_0Pk36Cl4";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const SHOP_NAME = "Phumjai";
+
+function formatBaht(n){
+  const num = Number(n) || 0;
+  return "฿" + num.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatDateTime(){
+  return new Date().toLocaleString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  });
+}
+
+// ---- Canvas order summary ----
+function wrapText(ctx, text, maxWidth){
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = "";
+  for (const w of words){
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawOrderImage(items, total){
+  const W = 800;
+  const padX = 40;
+  const rowH = 64;
+  const headerH = 168;
+  const footerH = 150;
+  const H = headerH + items.length * rowH + footerH;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // background
+  const bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0, "#171a22");
+  bg.addColorStop(1, "#0d0f13");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,H);
+
+  // card
+  const cardM = 16;
+  ctx.fillStyle = "#15181f";
+  roundRect(ctx, cardM, cardM, W - cardM*2, H - cardM*2, 20);
+  ctx.fill();
+  ctx.strokeStyle = "#2a2f3a";
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, cardM, cardM, W - cardM*2, H - cardM*2, 20);
+  ctx.stroke();
+
+  // header
+  ctx.fillStyle = "#d4af6a";
+  ctx.font = "700 30px Prompt, sans-serif";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("🐾 " + SHOP_NAME, padX, 66);
+
+  ctx.fillStyle = "#f2f0ea";
+  ctx.font = "600 20px Prompt, sans-serif";
+  ctx.fillText("สรุปคำสั่งซื้อ", padX, 98);
+
+  ctx.fillStyle = "#a8adb8";
+  ctx.font = "400 15px Prompt, sans-serif";
+  ctx.fillText(formatDateTime() + " น.", padX, 124);
+
+  ctx.strokeStyle = "#2a2f3a";
+  ctx.beginPath();
+  ctx.moveTo(padX, headerH - 12);
+  ctx.lineTo(W - padX, headerH - 12);
+  ctx.stroke();
+
+  // rows
+  let y = headerH + 14;
+  ctx.textBaseline = "alphabetic";
+  items.forEach((it, idx) => {
+    ctx.fillStyle = "#f2f0ea";
+    ctx.font = "500 17px Prompt, sans-serif";
+    const nameLines = wrapText(ctx, it.name, 380);
+    const firstLine = nameLines[0] || it.name;
+    ctx.fillText(firstLine, padX, y + 22);
+    if (nameLines.length > 1){
+      ctx.font = "400 13px Prompt, sans-serif";
+      ctx.fillStyle = "#a8adb8";
+      ctx.fillText(nameLines[1], padX, y + 40);
+    }
+
+    ctx.fillStyle = "#a8adb8";
+    ctx.font = "400 14px Prompt, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(`${it.qty} × ${formatBaht(it.price)}`, padX, y + (nameLines.length > 1 ? 56 : 42));
+
+    ctx.fillStyle = "#d4af6a";
+    ctx.font = "700 18px Prompt, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(formatBaht(it.qty * it.price), W - padX, y + 30);
+    ctx.textAlign = "left";
+
+    if (idx < items.length - 1){
+      ctx.strokeStyle = "#22262f";
+      ctx.beginPath();
+      ctx.moveTo(padX, y + rowH - 12);
+      ctx.lineTo(W - padX, y + rowH - 12);
+      ctx.stroke();
+    }
+    y += rowH;
+  });
+
+  // total
+  const totalY = headerH + items.length * rowH + 20;
+  ctx.strokeStyle = "#2a2f3a";
+  ctx.beginPath();
+  ctx.moveTo(padX, totalY - 24);
+  ctx.lineTo(W - padX, totalY - 24);
+  ctx.stroke();
+
+  ctx.fillStyle = "#f2f0ea";
+  ctx.font = "600 19px Prompt, sans-serif";
+  ctx.fillText("ยอดรวมทั้งหมด", padX, totalY + 8);
+
+  ctx.fillStyle = "#d4af6a";
+  ctx.font = "700 26px Prompt, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText(formatBaht(total), W - padX, totalY + 12);
+  ctx.textAlign = "left";
+
+  // footer note
+  ctx.fillStyle = "#6c7280";
+  ctx.font = "400 13.5px Prompt, sans-serif";
+  const noteLines = wrapText(ctx, "กรุณาส่งรูปนี้มาที่ร้านผ่านช่องทางที่สะดวก (LINE / Facebook / Instagram) เพื่อยืนยันคำสั่งซื้อ — ร้านจะติดต่อกลับเพื่อนัดชำระเงินและจัดส่ง/รับสินค้า", W - cardM*2 - padX*2 + 40);
+  let ny = totalY + 46;
+  noteLines.forEach(line => {
+    ctx.fillText(line, padX, ny);
+    ny += 20;
+  });
+
+  return canvas.toDataURL("image/png");
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// ---- Components ----
+function ProductCard({ product, qty, onInc, onDec }){
+  const outOfStock = (product.stock_qty ?? 0) <= 0;
+  const atMax = qty >= (product.stock_qty ?? 0);
+  return (
+    <div className="card">
+      <div className="card-img">
+        {outOfStock && <div className="badge-out">สินค้าหมด</div>}
+        {product.image_url
+          ? <img src={product.image_url} alt={product.name} loading="lazy" />
+          : <div className="placeholder">🐾</div>}
+      </div>
+      <div className="card-body">
+        <div className="card-name">{product.name}</div>
+        {product.description && <div className="card-desc">{product.description}</div>}
+        <div className="card-price">{formatBaht(product.price)}</div>
+        {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
+        <div className="stepper">
+          <button onClick={() => onDec(product)} disabled={qty <= 0}>−</button>
+          <span className="qty">{qty}</span>
+          <button onClick={() => onInc(product)} disabled={outOfStock || atMax}>+</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderModal({ items, total, imageUrl, onClose }){
+  const fileName = `phumjai-order-${Date.now()}.png`;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h2>สรุปคำสั่งซื้อของคุณ</h2>
+        {imageUrl
+          ? <img src={imageUrl} alt="สรุปคำสั่งซื้อ" />
+          : <div className="state-box"><div className="spinner"></div>กำลังสร้างรูปภาพ...</div>}
+        <div className="modal-note">
+          📌 ส่งรูปนี้มาที่ร้านผ่านช่องทางที่สะดวก (LINE / Facebook / Instagram) เพื่อยืนยันคำสั่งซื้อ แอปนี้ไม่มีระบบชำระเงินในตัว ทางร้านจะติดต่อกลับเพื่อนัดชำระเงินและจัดส่ง
+        </div>
+        <div className="modal-actions">
+          <button className="btn-secondary" onClick={onClose}>ปิด</button>
+          {imageUrl && (
+            <a className="btn-primary" href={imageUrl} download={fileName} style={{textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center"}}>
+              ดาวน์โหลดรูปภาพ
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cart, setCart] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [orderImage, setOrderImage] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await sb
+        .from("shop_products")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!active) return;
+      if (error){
+        setError("โหลดสินค้าไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง");
+      } else {
+        setProducts(data || []);
+      }
+      setLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const inc = (p) => {
+    setCart(prev => {
+      const cur = prev[p.id] || 0;
+      if (cur >= (p.stock_qty ?? 0)) return prev;
+      return { ...prev, [p.id]: cur + 1 };
+    });
+  };
+  const dec = (p) => {
+    setCart(prev => {
+      const cur = prev[p.id] || 0;
+      if (cur <= 0) return prev;
+      const next = { ...prev, [p.id]: cur - 1 };
+      if (next[p.id] === 0) delete next[p.id];
+      return next;
+    });
+  };
+
+  const cartItems = useMemo(() => {
+    return Object.entries(cart)
+      .map(([id, qty]) => {
+        const p = products.find(pr => String(pr.id) === String(id));
+        if (!p || qty <= 0) return null;
+        return { id, name: p.name, price: Number(p.price) || 0, qty };
+      })
+      .filter(Boolean);
+  }, [cart, products]);
+
+  const totalQty = cartItems.reduce((s, it) => s + it.qty, 0);
+  const totalPrice = cartItems.reduce((s, it) => s + it.qty * it.price, 0);
+
+  const confirmOrder = () => {
+    if (cartItems.length === 0) return;
+    setModalOpen(true);
+    setOrderImage(null);
+    setTimeout(() => {
+      const img = drawOrderImage(cartItems, totalPrice);
+      setOrderImage(img);
+    }, 30);
+  };
+
+  return (
+    <React.Fragment>
+      <div className="topbar">
+        <div className="topbar-inner">
+          <div className="logo">🐾</div>
+          <div>
+            <div className="brand-name">{SHOP_NAME}</div>
+            <div className="brand-tag">สัตว์เลี้ยง · สัตว์แปลก · ของใช้สัตว์เลี้ยง</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container">
+        <div className="hero">
+          <h1>เลือกสินค้าที่ต้องการ</h1>
+          <p>กดปุ่ม + เพื่อเพิ่มจำนวน แล้วกด "ยืนยันคำสั่งซื้อ" ด้านล่างเพื่อสร้างรูปสรุป ส่งให้ร้านทาง LINE/Facebook/Instagram</p>
+        </div>
+
+        {loading && (
+          <div className="state-box">
+            <div className="spinner"></div>
+            กำลังโหลดสินค้า...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="state-box">
+            <div className="big">⚠️</div>
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && products.length === 0 && (
+          <div className="state-box">
+            <div className="big">🐾</div>
+            ยังไม่มีสินค้าในร้านขณะนี้
+          </div>
+        )}
+
+        {!loading && !error && products.length > 0 && (
+          <div className="grid">
+            {products.map(p => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                qty={cart[p.id] || 0}
+                onInc={inc}
+                onDec={dec}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="footer-note">© {new Date().getFullYear()} {SHOP_NAME} — ไม่มีระบบชำระเงินในแอปนี้ ยืนยันคำสั่งซื้อผ่านช่องทางโซเชียลของร้าน</div>
+      </div>
+
+      {totalQty > 0 && (
+        <div className="cartbar">
+          <div className="cartbar-inner">
+            <div className="cartbar-info">
+              <div className="label">{totalQty} ชิ้นในตะกร้า</div>
+              <div className="value">{formatBaht(totalPrice)}</div>
+            </div>
+            <button className="btn-primary" onClick={confirmOrder}>ยืนยันคำสั่งซื้อ</button>
+          </div>
+        </div>
+      )}
+
+      {modalOpen && (
+        <OrderModal
+          items={cartItems}
+          total={totalPrice}
+          imageUrl={orderImage}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+    </React.Fragment>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
