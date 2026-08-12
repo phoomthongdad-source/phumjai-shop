@@ -42,7 +42,6 @@
     font-family: 'Prompt', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
-    padding-bottom: calc(96px + var(--safe-bottom));
   }
   a{ color: inherit; }
   img{ max-width: 100%; display:block; }
@@ -147,7 +146,9 @@
     display:flex; flex-direction:column;
     box-shadow: var(--shadow);
     position: relative;
+    cursor: pointer;
   }
+  .card:active{ transform: scale(0.985); }
   .card-img{
     position: relative;
     aspect-ratio: 1 / 1;
@@ -202,6 +203,12 @@
   .card-price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:2px; }
   .card-price{ font-size: 15px; font-weight:700; color: var(--accent); }
   .card-stock{ font-size: 10.5px; color: var(--text-faint); white-space:nowrap; }
+  .card-in-cart{
+    margin-top: auto; padding-top:8px;
+    display:flex; align-items:center; gap:5px;
+    font-size: 11px; font-weight:600; color: var(--accent);
+  }
+  .card-in-cart svg{ flex-shrink:0; }
 
   .stepper{
     margin-top: auto; padding-top: 8px;
@@ -221,22 +228,6 @@
   .stepper button:disabled{ opacity: 0.3; cursor: not-allowed; }
   .stepper .qty{ font-size: 14px; font-weight:600; min-width: 22px; text-align:center; }
 
-  .cartbar{
-    position: fixed; left:0; right:0; bottom:0; z-index: 40;
-    padding: 10px 14px calc(12px + var(--safe-bottom));
-    background: linear-gradient(180deg, rgba(13,15,19,0) 0%, rgba(13,15,19,0.97) 30%);
-  }
-  .cartbar-inner{
-    max-width: 960px; margin:0 auto;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: var(--shadow);
-    padding: 12px 14px;
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-  }
-  .cartbar-info .label{ font-size: 11px; color: var(--text-faint); }
-  .cartbar-info .value{ font-size: 16px; font-weight:700; color: var(--accent); }
   .btn-primary{
     background: var(--accent);
     color: var(--bg); font-weight:700; font-size: 14px;
@@ -278,6 +269,70 @@
     font-size: 12.5px; line-height:1.7; color: var(--text); white-space: pre-wrap; word-break: break-word;
   }
   .btn-icon{ display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
+
+  .modal-x{
+    position:absolute; top:12px; right:12px; z-index:2;
+    width:30px; height:30px; border-radius:50%;
+    background: rgba(6,7,9,0.55); color:#fff; border:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .quickadd-modal{ position:relative; padding-top:0; }
+  .quickadd-img{
+    position:relative; aspect-ratio: 1/1; overflow:hidden;
+    background: var(--bg-elev-2);
+    border-radius: 20px 20px 0 0; margin: 0 -18px 14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  @media (min-width: 640px){ .quickadd-img{ border-radius: 20px 20px 0 0; } }
+  .quickadd-img img{ width:100%; height:100%; object-fit:cover; display:block; margin:0; border:none; border-radius:0; }
+  .quickadd-img .placeholder{ width:38%; height:auto; opacity:0.3; object-fit:contain; }
+  .quickadd-name{ font-size:16px; font-weight:700; margin-bottom:4px; }
+  .quickadd-desc{ font-size:13px; color: var(--text-dim); line-height:1.6; margin-bottom:8px; }
+  .quickadd-actions{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top: 16px;
+  }
+  .stepper-lg button{ width:38px; height:38px; font-size:19px; }
+  .stepper-lg .qty{ font-size:16px; min-width:28px; }
+  .btn-confirm{
+    width:52px; height:52px; border-radius:50%; flex-shrink:0;
+    background: var(--accent); color: var(--bg); border:none;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  }
+  .btn-confirm:disabled{ opacity:0.35; box-shadow:none; }
+
+  .cart-btn{
+    position:relative;
+    width:34px; height:34px; flex-shrink:0; border-radius:50%;
+    background: var(--bg-elev); border:1px solid var(--border); color: var(--text-dim);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cart-btn:hover{ color: var(--text); border-color: var(--accent-dim); }
+  .cart-badge{
+    position:absolute; top:-4px; right:-4px;
+    min-width:16px; height:16px; padding:0 3px; border-radius:999px;
+    background: var(--accent); color: var(--bg);
+    font-size:9.5px; font-weight:700; line-height:16px; text-align:center;
+  }
+
+  .cart-modal{ position:relative; }
+  .cart-list{ display:flex; flex-direction:column; margin-bottom:12px; }
+  .cart-row{
+    display:flex; align-items:center; gap:10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .cart-row:last-child{ border-bottom:none; }
+  .cart-row-info{ flex:1; min-width:0; }
+  .cart-row-name{ font-size:13px; font-weight:600; }
+  .cart-row-price{ font-size:11px; color: var(--text-faint); margin-top:2px; }
+  .cart-row-subtotal{ font-size:13px; font-weight:700; color: var(--accent); min-width:56px; text-align:right; }
+  .cart-summary{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 0; border-top: 1px solid var(--border); margin-bottom:14px;
+  }
+  .cart-summary .label{ font-size:12.5px; color: var(--text-dim); }
+  .cart-summary .value{ font-size:18px; font-weight:700; color: var(--accent); }
   .modal-note{
     font-size: 12.5px; color: var(--text-dim); line-height:1.6;
     background: var(--bg-elev-2); border: 1px solid var(--border);
@@ -454,6 +509,24 @@ function IconCheck(){
     </svg>
   );
 }
+function IconCart(){
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="10" cy="20" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="20" r="1.3" fill="currentColor" stroke="none" />
+      <path d="M3.5 4.5 H6 L8.3 15.2 A1.6 1.6 0 0 0 9.9 16.5 H18.4 A1.6 1.6 0 0 0 20 15.3 L21.5 8 H6.8" />
+    </svg>
+  );
+}
+function IconTrash(){
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 7 H19" />
+      <path d="M9 7 V4.5 A1 1 0 0 1 10 3.5 H14 A1 1 0 0 1 15 4.5 V7" />
+      <path d="M7 7 L7.8 19.5 A1.5 1.5 0 0 0 9.3 21 H14.7 A1.5 1.5 0 0 0 16.2 19.5 L17 7" />
+    </svg>
+  );
+}
 
 // ---- Main category display labels (English, matches BIOACTIVE · NATURE · LIFE branding) ----
 // Keyed by the category name as stored in Supabase (kept in Thai there for the admin's
@@ -618,9 +691,8 @@ function roundRect(ctx, x, y, w, h, r){
 }
 
 // ---- Components ----
-function ProductCard({ product, qty, onInc, onDec }){
+function ProductCard({ product, qty, onOpen }){
   const outOfStock = (product.stock_qty ?? 0) <= 0;
-  const atMax = qty >= (product.stock_qty ?? 0);
   const isBestseller = !!product.is_bestseller;
   const isNew = !isBestseller && isProductNew(product);
   const images = (Array.isArray(product.image_urls) && product.image_urls.length)
@@ -631,7 +703,7 @@ function ProductCard({ product, qty, onInc, onDec }){
   const prevImg = (e) => { e.stopPropagation(); setImgIdx(i => (i - 1 + images.length) % images.length); };
   const nextImg = (e) => { e.stopPropagation(); setImgIdx(i => (i + 1) % images.length); };
   return (
-    <div className="card">
+    <div className="card" onClick={() => onOpen(product)} role="button" tabIndex={0}>
       <div className="card-img">
         {outOfStock && <div className="badge-out">สินค้าหมด</div>}
         {isBestseller && <div className="badge-tag badge-bestseller">ขายดี</div>}
@@ -658,10 +730,105 @@ function ProductCard({ product, qty, onInc, onDec }){
           <div className="card-price">{formatBaht(product.price)}</div>
           {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
         </div>
-        <div className="stepper">
-          <button onClick={() => onDec(product)} disabled={qty <= 0}>−</button>
-          <span className="qty">{qty}</span>
-          <button onClick={() => onInc(product)} disabled={outOfStock || atMax}>+</button>
+        {qty > 0 && <div className="card-in-cart"><IconCheck /> ในตะกร้า {qty} ชิ้น</div>}
+      </div>
+    </div>
+  );
+}
+
+function QuickAddModal({ product, initialQty, onConfirm, onClose }){
+  const outOfStock = (product.stock_qty ?? 0) <= 0;
+  const [qty, setQty] = useState(outOfStock ? 0 : (initialQty > 0 ? initialQty : 1));
+  const atMax = qty >= (product.stock_qty ?? 0);
+  const images = (Array.isArray(product.image_urls) && product.image_urls.length)
+    ? product.image_urls
+    : (product.image_url ? [product.image_url] : []);
+  const [imgIdx, setImgIdx] = useState(0);
+  const showGalleryNav = images.length > 1;
+  const prevImg = () => setImgIdx(i => (i - 1 + images.length) % images.length);
+  const nextImg = () => setImgIdx(i => (i + 1) % images.length);
+  const dec = () => setQty(q => Math.max(0, q - 1));
+  const inc = () => setQty(q => Math.min(product.stock_qty ?? 0, q + 1));
+  const handleConfirm = () => { onConfirm(product, qty); onClose(); };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal quickadd-modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-x" onClick={onClose} aria-label="ปิด"><IconClose /></button>
+        <div className="quickadd-img">
+          {outOfStock && <div className="badge-out">สินค้าหมด</div>}
+          {product.is_bestseller && <div className="badge-tag badge-bestseller">ขายดี</div>}
+          {!product.is_bestseller && isProductNew(product) && <div className="badge-tag badge-new">ใหม่</div>}
+          {images.length
+            ? <img src={images[imgIdx]} alt={product.name} />
+            : <img className="placeholder" src={LOGO_URI} alt="" />}
+          {showGalleryNav && (
+            <React.Fragment>
+              <button type="button" className="img-nav img-nav-prev" onClick={prevImg} aria-label="รูปก่อนหน้า"><IconChevronLeft /></button>
+              <button type="button" className="img-nav img-nav-next" onClick={nextImg} aria-label="รูปถัดไป"><IconChevronRight /></button>
+              <div className="img-dots">
+                {images.map((_, i) => (
+                  <span key={i} className={"img-dot" + (i === imgIdx ? " active" : "")} />
+                ))}
+              </div>
+            </React.Fragment>
+          )}
+        </div>
+        <div className="quickadd-body">
+          <div className="quickadd-name">{product.name}</div>
+          {product.description && <div className="quickadd-desc">{product.description}</div>}
+          <div className="card-price-row">
+            <div className="card-price">{formatBaht(product.price)}</div>
+            {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
+          </div>
+          <div className="quickadd-actions">
+            <div className="stepper stepper-lg">
+              <button onClick={dec} disabled={qty <= 0}>−</button>
+              <span className="qty">{qty}</span>
+              <button onClick={inc} disabled={outOfStock || atMax}>+</button>
+            </div>
+            <button type="button" className="btn-confirm" onClick={handleConfirm} disabled={outOfStock} aria-label="ยืนยันเพิ่มลงตะกร้า" title="ยืนยันเพิ่มลงตะกร้า">
+              <IconCheck />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CartDrawer({ items, total, onInc, onDec, onCheckout, onClose }){
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal cart-modal" onClick={e => e.stopPropagation()}>
+        <h2><IconCart /> ตะกร้าสินค้า</h2>
+        {items.length === 0 ? (
+          <div className="state-box">ยังไม่มีสินค้าในตะกร้า</div>
+        ) : (
+          <div className="cart-list">
+            {items.map(it => (
+              <div className="cart-row" key={it.id}>
+                <div className="cart-row-info">
+                  <div className="cart-row-name">{it.name}</div>
+                  <div className="cart-row-price">{formatBaht(it.price)} / ชิ้น</div>
+                </div>
+                <div className="stepper">
+                  <button onClick={() => onDec(it.product)} disabled={it.qty <= 0}>−</button>
+                  <span className="qty">{it.qty}</span>
+                  <button onClick={() => onInc(it.product)} disabled={it.qty >= it.stock_qty}>+</button>
+                </div>
+                <div className="cart-row-subtotal">{formatBaht(it.price * it.qty)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="cart-summary">
+          <div className="label">ยอดรวม</div>
+          <div className="value">{formatBaht(total)}</div>
+        </div>
+        <div className="modal-actions">
+          <button className="btn-secondary" onClick={onClose}>ปิด</button>
+          <button className="btn-primary" onClick={onCheckout} disabled={items.length === 0}>ยืนยันคำสั่งซื้อ</button>
         </div>
       </div>
     </div>
@@ -735,6 +902,8 @@ function App(){
   const [selectedMain, setSelectedMain] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [quickAddProduct, setQuickAddProduct] = useState(null);
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -807,12 +976,21 @@ function App(){
     });
   };
 
+  const setCartQty = (product, qty) => {
+    setCart(prev => {
+      const next = { ...prev };
+      if (qty <= 0) delete next[product.id];
+      else next[product.id] = qty;
+      return next;
+    });
+  };
+
   const cartItems = useMemo(() => {
     return Object.entries(cart)
       .map(([id, qty]) => {
         const p = products.find(pr => String(pr.id) === String(id));
         if (!p || qty <= 0) return null;
-        return { id, name: p.name, price: Number(p.price) || 0, qty };
+        return { id, name: p.name, price: Number(p.price) || 0, qty, stock_qty: p.stock_qty ?? 0, product: p };
       })
       .filter(Boolean);
   }, [cart, products]);
@@ -836,6 +1014,10 @@ function App(){
             <div className="brand-name">{SHOP_NAME}</div>
             <div className="brand-tag">BIOACTIVE · NATURE · LIFE</div>
           </div>
+          <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="ตะกร้าสินค้า" title="ตะกร้าสินค้า">
+            <IconCart />
+            {totalQty > 0 && <span className="cart-badge">{totalQty}</span>}
+          </button>
           <button className="help-btn" onClick={() => setShowHelp(v => !v)} aria-label="วิธีสั่งซื้อ" title="วิธีสั่งซื้อ">
             <IconHelp />
           </button>
@@ -843,7 +1025,7 @@ function App(){
         {showHelp && (
           <div className="help-panel">
             <div className="help-panel-inner">
-              <p>เลือกสินค้าที่ต้องการ กดปุ่ม + เพื่อเพิ่มจำนวน แล้วกด "ยืนยันคำสั่งซื้อ" ด้านล่างเพื่อสร้างรูปสรุป ส่งให้ร้านทาง LINE/Facebook/Instagram</p>
+              <p>แตะที่สินค้าเพื่อเลือกจำนวนแล้วกดเครื่องหมายถูกเพื่อใส่ตะกร้า จากนั้นกดไอคอนตะกร้ามุมขวาบน แล้วกด "ยืนยันคำสั่งซื้อ" เพื่อสร้างรูปสรุปหรือคัดลอกข้อความ ส่งให้ร้านทาง LINE/Facebook/Instagram</p>
               <button className="help-panel-close" onClick={() => setShowHelp(false)} aria-label="ปิด"><IconClose /></button>
             </div>
           </div>
@@ -860,8 +1042,7 @@ function App(){
                   <ProductCard
                     product={p}
                     qty={cart[p.id] || 0}
-                    onInc={inc}
-                    onDec={dec}
+                    onOpen={setQuickAddProduct}
                   />
                 </div>
               ))}
@@ -921,8 +1102,7 @@ function App(){
                 key={p.id}
                 product={p}
                 qty={cart[p.id] || 0}
-                onInc={inc}
-                onDec={dec}
+                onOpen={setQuickAddProduct}
               />
             ))}
           </div>
@@ -931,16 +1111,25 @@ function App(){
         <div className="footer-note">© {new Date().getFullYear()} {SHOP_NAME} — ไม่มีระบบชำระเงินในแอปนี้ ยืนยันคำสั่งซื้อผ่านช่องทางโซเชียลของร้าน</div>
       </div>
 
-      {totalQty > 0 && (
-        <div className="cartbar">
-          <div className="cartbar-inner">
-            <div className="cartbar-info">
-              <div className="label">{totalQty} ชิ้นในตะกร้า</div>
-              <div className="value">{formatBaht(totalPrice)}</div>
-            </div>
-            <button className="btn-primary" onClick={confirmOrder}>ยืนยันคำสั่งซื้อ</button>
-          </div>
-        </div>
+      {quickAddProduct && (
+        <QuickAddModal
+          key={quickAddProduct.id}
+          product={quickAddProduct}
+          initialQty={cart[quickAddProduct.id] || 0}
+          onConfirm={setCartQty}
+          onClose={() => setQuickAddProduct(null)}
+        />
+      )}
+
+      {cartOpen && (
+        <CartDrawer
+          items={cartItems}
+          total={totalPrice}
+          onInc={inc}
+          onDec={dec}
+          onCheckout={() => { setCartOpen(false); confirmOrder(); }}
+          onClose={() => setCartOpen(false)}
+        />
       )}
 
       {modalOpen && (
