@@ -64,14 +64,50 @@
     display:flex; align-items:center; justify-content:center;
   }
   .logo img{ width:100%; height:100%; object-fit:contain; display:block; }
+  .brand-block{ flex:1; min-width:0; }
   .brand-name{ font-weight:600; font-size: 18px; letter-spacing: 0.3px; }
   .brand-tag{ font-size: 11px; color: var(--text-faint); margin-top:1px; }
+  .help-btn{
+    width:34px; height:34px; flex-shrink:0; border-radius:50%;
+    background: var(--bg-elev); border:1px solid var(--border); color: var(--text-dim);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .help-btn:hover{ color: var(--text); border-color: var(--accent-dim); }
+  .help-panel{
+    max-width: 960px; margin: 10px auto 0;
+  }
+  .help-panel-inner{
+    display:flex; align-items:flex-start; gap:10px;
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .help-panel-inner p{ flex:1; margin:0; font-size:13px; color: var(--text-dim); line-height:1.6; }
+  .help-panel-close{
+    flex-shrink:0; color: var(--text-faint); background:none; border:none; padding:2px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .help-panel-close:hover{ color: var(--text); }
 
   .container{ max-width: 960px; margin: 0 auto; padding: 18px 14px 0; }
 
   .hero{ padding: 6px 2px 14px; }
   .hero h1{ font-size: 21px; font-weight: 600; margin: 0 0 4px; }
   .hero p{ font-size: 13.5px; color: var(--text-dim); margin:0; line-height:1.6; }
+
+  .featured{ margin: 4px 0 18px; }
+  .featured-head{
+    font-size: 12px; font-weight:700; letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--text-faint); margin: 0 2px 8px;
+  }
+  .featured-row{
+    display:flex; gap: 12px; overflow-x:auto; padding-bottom:4px; scroll-snap-type: x proximity;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .featured-row::-webkit-scrollbar{ display:none; }
+  .featured-item{ flex: 0 0 148px; width:148px; scroll-snap-align: start; }
+  .featured-item .card-name{ font-size: 12.5px; }
+  .featured-item .card-desc{ display:none; }
+  @media (min-width: 560px){ .featured-item{ flex-basis:170px; width:170px; } }
 
   .cat-nav{ margin: 0 0 16px; }
   .cat-row{
@@ -113,6 +149,7 @@
     position: relative;
   }
   .card-img{
+    position: relative;
     aspect-ratio: 1 / 1;
     background: var(--bg-elev-2);
     display:flex; align-items:center; justify-content:center;
@@ -120,6 +157,20 @@
   }
   .card-img img{ width:100%; height:100%; object-fit: cover; }
   .card-img .placeholder{ width: 38%; height:auto; opacity:0.3; object-fit:contain; }
+  .img-nav{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:24px; height:24px; border-radius:50%;
+    background: rgba(0,0,0,0.45); color:#fff; border:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .img-nav-prev{ left:6px; }
+  .img-nav-next{ right:6px; }
+  .img-dots{
+    position:absolute; bottom:6px; left:0; right:0;
+    display:flex; align-items:center; justify-content:center; gap:4px;
+  }
+  .img-dot{ width:5px; height:5px; border-radius:50%; background: rgba(255,255,255,0.45); }
+  .img-dot.active{ background: #fff; }
   .badge-out{
     position:absolute; top:8px; left:8px;
     background: rgba(194,198,193,0.14);
@@ -128,6 +179,19 @@
     font-size: 10.5px; font-weight:600;
     padding: 3px 8px; border-radius: 999px;
   }
+  .badge-tag{
+    position:absolute; top:8px; right:8px;
+    font-size: 10.5px; font-weight:700;
+    padding: 3px 9px; border-radius: 999px;
+    letter-spacing: 0.2px;
+  }
+  .badge-bestseller{
+    background: var(--accent); color: var(--bg);
+  }
+  .badge-new{
+    background: var(--bg-elev); color: var(--text);
+    border: 1px solid var(--accent-dim);
+  }
   .card-body{ padding: 10px 11px 12px; display:flex; flex-direction:column; gap:6px; flex:1; }
   .card-name{ font-size: 13.5px; font-weight:600; line-height:1.35; }
   .card-desc{
@@ -135,8 +199,9 @@
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
     min-height: 32px;
   }
-  .card-price{ font-size: 15px; font-weight:700; color: var(--accent); margin-top:2px; }
-  .card-stock{ font-size: 10.5px; color: var(--text-faint); }
+  .card-price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:2px; }
+  .card-price{ font-size: 15px; font-weight:700; color: var(--accent); }
+  .card-stock{ font-size: 10.5px; color: var(--text-faint); white-space:nowrap; }
 
   .stepper{
     margin-top: auto; padding-top: 8px;
@@ -199,6 +264,20 @@
   @media (min-width: 640px){ .modal{ border-radius: 20px; } }
   .modal h2{ font-size: 16.5px; margin: 0 0 12px; }
   .modal img{ width:100%; border-radius: 12px; border:1px solid var(--border); margin-bottom: 14px; }
+  .modal-tabs{ display:flex; gap:6px; margin-bottom: 12px; }
+  .modal-tab{
+    flex:1; background: var(--bg-elev-2); color: var(--text-dim);
+    border:1px solid var(--border); border-radius: 10px;
+    padding: 8px; font-size: 12.5px; font-weight:600;
+  }
+  .modal-tab.active{ background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .order-text{
+    width:100%; max-height: 260px; overflow-y:auto;
+    background: var(--bg-elev-2); border:1px solid var(--border); border-radius: 12px;
+    padding: 12px; margin: 0 0 14px; font-family: inherit;
+    font-size: 12.5px; line-height:1.7; color: var(--text); white-space: pre-wrap; word-break: break-word;
+  }
+  .btn-icon{ display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
   .modal-note{
     font-size: 12.5px; color: var(--text-dim); line-height:1.6;
     background: var(--bg-elev-2); border: 1px solid var(--border);
@@ -255,6 +334,54 @@ function formatDateTime(){
   });
 }
 
+function buildOrderText(items, total){
+  const lines = [];
+  lines.push(`สรุปคำสั่งซื้อ - ${SHOP_NAME}`);
+  lines.push(formatDateTime());
+  lines.push("");
+  items.forEach(it => {
+    lines.push(`${it.name} x${it.qty} = ${formatBaht(it.price * it.qty)}`);
+  });
+  lines.push("");
+  lines.push(`รวมทั้งหมด: ${formatBaht(total)}`);
+  lines.push("");
+  lines.push("(ส่งข้อความนี้มาที่ร้านผ่าน LINE / Facebook / Instagram เพื่อยืนยันคำสั่งซื้อ)");
+  return lines.join("\n");
+}
+
+async function copyText(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      // fall through to legacy fallback below
+    }
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+// สินค้าที่เพิ่มเข้าระบบภายใน 14 วัน ถือว่า "ใหม่" — คำนวณอัตโนมัติจาก created_at ไม่ต้องตั้งค่าเอง
+const NEW_WITHIN_DAYS = 14;
+function isProductNew(product){
+  if (!product.created_at) return false;
+  const ageMs = Date.now() - new Date(product.created_at).getTime();
+  return ageMs >= 0 && ageMs <= NEW_WITHIN_DAYS * 24 * 60 * 60 * 1000;
+}
+
 // ---- Icons (no emoji — plain currentColor SVG marks) ----
 function IconWarning(){
   return (
@@ -272,6 +399,74 @@ function IconPin(){
       <circle cx="12" cy="9.5" r="2.4" />
     </svg>
   );
+}
+function IconHelp(){
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.3 9.3a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.2 1-1.2 2" />
+      <circle cx="12" cy="16.7" r="0.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function IconClose(){
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <path d="M5 5 L19 19 M19 5 L5 19" />
+    </svg>
+  );
+}
+function IconChevronLeft(){
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 5 L8 12 L15 19" />
+    </svg>
+  );
+}
+function IconChevronRight(){
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 5 L16 12 L9 19" />
+    </svg>
+  );
+}
+function IconCopy(){
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+      <path d="M15.5 8.5 V6.5 A2 2 0 0 0 13.5 4.5 H6.5 A2 2 0 0 0 4.5 6.5 V13.5 A2 2 0 0 0 6.5 15.5 H8.5" />
+    </svg>
+  );
+}
+function IconDownload(){
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 4 V15" />
+      <path d="M7.5 11 L12 15.5 L16.5 11" />
+      <path d="M4.5 18.5 H19.5" />
+    </svg>
+  );
+}
+function IconCheck(){
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 12.5 L9.5 17.5 L19.5 6.5" />
+    </svg>
+  );
+}
+
+// ---- Main category display labels (English, matches BIOACTIVE · NATURE · LIFE branding) ----
+// Keyed by the category name as stored in Supabase (kept in Thai there for the admin's
+// own clarity) so this is purely a customer-facing display translation.
+const CATEGORY_LABELS = {
+  "ด้วง": "BEETLES",
+  "ไอโซพอด": "ISOPODS",
+  "สปริงเทล": "SPRINGTAILS",
+  "ปลาเมดากะ": "MEDAKA",
+  "อุปกรณ์สำหรับตู้ / กล่องเลี้ยงสัตว์": "BIOACTIVE",
+};
+function catLabel(name){
+  return CATEGORY_LABELS[name] || name;
 }
 
 // ---- Canvas order summary ----
@@ -426,19 +621,43 @@ function roundRect(ctx, x, y, w, h, r){
 function ProductCard({ product, qty, onInc, onDec }){
   const outOfStock = (product.stock_qty ?? 0) <= 0;
   const atMax = qty >= (product.stock_qty ?? 0);
+  const isBestseller = !!product.is_bestseller;
+  const isNew = !isBestseller && isProductNew(product);
+  const images = (Array.isArray(product.image_urls) && product.image_urls.length)
+    ? product.image_urls
+    : (product.image_url ? [product.image_url] : []);
+  const [imgIdx, setImgIdx] = useState(0);
+  const showGalleryNav = images.length > 1;
+  const prevImg = (e) => { e.stopPropagation(); setImgIdx(i => (i - 1 + images.length) % images.length); };
+  const nextImg = (e) => { e.stopPropagation(); setImgIdx(i => (i + 1) % images.length); };
   return (
     <div className="card">
       <div className="card-img">
         {outOfStock && <div className="badge-out">สินค้าหมด</div>}
-        {product.image_url
-          ? <img src={product.image_url} alt={product.name} loading="lazy" />
+        {isBestseller && <div className="badge-tag badge-bestseller">ขายดี</div>}
+        {isNew && <div className="badge-tag badge-new">ใหม่</div>}
+        {images.length
+          ? <img src={images[imgIdx]} alt={product.name} loading="lazy" />
           : <img className="placeholder" src={LOGO_URI} alt="" />}
+        {showGalleryNav && (
+          <React.Fragment>
+            <button type="button" className="img-nav img-nav-prev" onClick={prevImg} aria-label="รูปก่อนหน้า"><IconChevronLeft /></button>
+            <button type="button" className="img-nav img-nav-next" onClick={nextImg} aria-label="รูปถัดไป"><IconChevronRight /></button>
+            <div className="img-dots">
+              {images.map((_, i) => (
+                <span key={i} className={"img-dot" + (i === imgIdx ? " active" : "")} />
+              ))}
+            </div>
+          </React.Fragment>
+        )}
       </div>
       <div className="card-body">
         <div className="card-name">{product.name}</div>
         {product.description && <div className="card-desc">{product.description}</div>}
-        <div className="card-price">{formatBaht(product.price)}</div>
-        {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
+        <div className="card-price-row">
+          <div className="card-price">{formatBaht(product.price)}</div>
+          {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
+        </div>
         <div className="stepper">
           <button onClick={() => onDec(product)} disabled={qty <= 0}>−</button>
           <span className="qty">{qty}</span>
@@ -451,23 +670,53 @@ function ProductCard({ product, qty, onInc, onDec }){
 
 function OrderModal({ items, total, imageUrl, onClose }){
   const fileName = `phumjai-order-${Date.now()}.png`;
+  const [tab, setTab] = useState("image"); // "image" | "text"
+  const [copied, setCopied] = useState(false);
+  const orderText = useMemo(() => buildOrderText(items, total), [items, total]);
+
+  const handleCopy = async () => {
+    const ok = await copyText(orderText);
+    if (ok){
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <h2>สรุปคำสั่งซื้อของคุณ</h2>
-        {imageUrl
-          ? <img src={imageUrl} alt="สรุปคำสั่งซื้อ" />
-          : <div className="state-box"><div className="spinner"></div>กำลังสร้างรูปภาพ...</div>}
+
+        <div className="modal-tabs">
+          <button className={"modal-tab" + (tab === "image" ? " active" : "")} onClick={() => setTab("image")}>รูปภาพ</button>
+          <button className={"modal-tab" + (tab === "text" ? " active" : "")} onClick={() => setTab("text")}>ข้อความ</button>
+        </div>
+
+        {tab === "image" && (
+          imageUrl
+            ? <img src={imageUrl} alt="สรุปคำสั่งซื้อ" />
+            : <div className="state-box"><div className="spinner"></div>กำลังสร้างรูปภาพ...</div>
+        )}
+        {tab === "text" && (
+          <pre className="order-text">{orderText}</pre>
+        )}
+
         <div className="modal-note">
           <IconPin />
-          <span>ส่งรูปนี้มาที่ร้านผ่านช่องทางที่สะดวก (LINE / Facebook / Instagram) เพื่อยืนยันคำสั่งซื้อ แอปนี้ไม่มีระบบชำระเงินในตัว ทางร้านจะติดต่อกลับเพื่อนัดชำระเงินและจัดส่ง</span>
+          <span>ส่งรูปหรือข้อความนี้มาที่ร้านผ่านช่องทางที่สะดวก (LINE / Facebook / Instagram) เพื่อยืนยันคำสั่งซื้อ แอปนี้ไม่มีระบบชำระเงินในตัว ทางร้านจะติดต่อกลับเพื่อนัดชำระเงินและจัดส่ง</span>
         </div>
+
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>ปิด</button>
-          {imageUrl && (
-            <a className="btn-primary" href={imageUrl} download={fileName} style={{textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center"}}>
-              ดาวน์โหลดรูปภาพ
+          {tab === "image" && imageUrl && (
+            <a className="btn-primary btn-icon" href={imageUrl} download={fileName}>
+              <IconDownload /> ดาวน์โหลดรูปภาพ
             </a>
+          )}
+          {tab === "text" && (
+            <button className="btn-primary btn-icon" onClick={handleCopy}>
+              {copied ? <React.Fragment><IconCheck /> คัดลอกแล้ว</React.Fragment> : <React.Fragment><IconCopy /> คัดลอกข้อความ</React.Fragment>}
+            </button>
           )}
         </div>
       </div>
@@ -485,6 +734,7 @@ function App(){
   const [orderImage, setOrderImage] = useState(null);
   const [selectedMain, setSelectedMain] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -529,6 +779,17 @@ function App(){
 
   const pickMain = (cat) => { setSelectedMain(cat); setSelectedSub(null); };
 
+  // สินค้าแนะนำ: ขายดี (ตั้งค่าโดยแอดมิน) มาก่อน ตามด้วยสินค้าใหม่ (คำนวณอัตโนมัติ) เรียงใหม่สุดก่อน
+  const featuredProducts = useMemo(() => {
+    return products
+      .filter(p => p.is_bestseller || isProductNew(p))
+      .sort((a, b) => {
+        if (!!b.is_bestseller !== !!a.is_bestseller) return b.is_bestseller ? 1 : -1;
+        return new Date(b.created_at) - new Date(a.created_at);
+      })
+      .slice(0, 12);
+  }, [products]);
+
   const inc = (p) => {
     setCart(prev => {
       const cur = prev[p.id] || 0;
@@ -571,30 +832,52 @@ function App(){
       <div className="topbar">
         <div className="topbar-inner">
           <div className="logo"><img src={LOGO_URI} alt="Phumjai" /></div>
-          <div>
+          <div className="brand-block">
             <div className="brand-name">{SHOP_NAME}</div>
             <div className="brand-tag">BIOACTIVE · NATURE · LIFE</div>
           </div>
+          <button className="help-btn" onClick={() => setShowHelp(v => !v)} aria-label="วิธีสั่งซื้อ" title="วิธีสั่งซื้อ">
+            <IconHelp />
+          </button>
         </div>
+        {showHelp && (
+          <div className="help-panel">
+            <div className="help-panel-inner">
+              <p>เลือกสินค้าที่ต้องการ กดปุ่ม + เพื่อเพิ่มจำนวน แล้วกด "ยืนยันคำสั่งซื้อ" ด้านล่างเพื่อสร้างรูปสรุป ส่งให้ร้านทาง LINE/Facebook/Instagram</p>
+              <button className="help-panel-close" onClick={() => setShowHelp(false)} aria-label="ปิด"><IconClose /></button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="container">
-        <div className="hero">
-          <h1>เลือกสินค้าที่ต้องการ</h1>
-          <p>กดปุ่ม + เพื่อเพิ่มจำนวน แล้วกด "ยืนยันคำสั่งซื้อ" ด้านล่างเพื่อสร้างรูปสรุป ส่งให้ร้านทาง LINE/Facebook/Instagram</p>
-        </div>
+        {!loading && !error && featuredProducts.length > 0 && (
+          <div className="featured">
+            <div className="featured-head">แนะนำ</div>
+            <div className="featured-row">
+              {featuredProducts.map(p => (
+                <div className="featured-item" key={p.id}>
+                  <ProductCard
+                    product={p}
+                    qty={cart[p.id] || 0}
+                    onInc={inc}
+                    onDec={dec}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!loading && !error && mainCategories.length > 0 && (
           <div className="cat-nav">
             <div className="cat-row">
-              <button className={"cat-chip" + (!selectedMain ? " active" : "")} onClick={() => pickMain(null)}>ทั้งหมด</button>
               {mainCategories.map(c => (
-                <button key={c.id} className={"cat-chip" + (selectedMain && selectedMain.id === c.id ? " active" : "")} onClick={() => pickMain(c)}>{c.name}</button>
+                <button key={c.id} className={"cat-chip" + (selectedMain && selectedMain.id === c.id ? " active" : "")} onClick={() => pickMain(c)}>{catLabel(c.name)}</button>
               ))}
             </div>
             {activeSubCategories.length > 0 && (
               <div className="cat-row cat-row-sub">
-                <button className={"cat-chip cat-chip-sub" + (!selectedSub ? " active" : "")} onClick={() => setSelectedSub(null)}>ทั้งหมด</button>
                 {activeSubCategories.map(c => (
                   <button key={c.id} className={"cat-chip cat-chip-sub" + (selectedSub && selectedSub.id === c.id ? " active" : "")} onClick={() => setSelectedSub(c)}>{c.name}</button>
                 ))}
