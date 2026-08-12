@@ -253,6 +253,19 @@
     max-height: 92vh; overflow-y: auto;
   }
   @media (min-width: 640px){ .modal{ border-radius: 20px; } }
+
+  /* กล่องสินค้า (quick-add) และตะกร้าสินค้า: อยู่กึ่งกลางจอเสมอ ย่อขนาดให้ได้สัดส่วนบนมือถือ ไม่เต็มขอบจอ */
+  .modal-overlay-center{ align-items:center; padding: 20px 16px; }
+  .modal-overlay-center .modal{
+    width:100%; max-width: 360px;
+    border-radius: 20px;
+    max-height: 80vh;
+    padding: 16px 16px calc(16px + var(--safe-bottom));
+  }
+  @media (min-width: 480px){ .modal-overlay-center .modal{ max-width: 380px; padding: 18px 18px calc(18px + var(--safe-bottom)); } }
+  .modal-overlay-center .quickadd-modal{ padding-top:0; }
+  .modal-overlay-center .quickadd-img{ margin: 0 -16px 14px; border-radius: 20px 20px 0 0; }
+  @media (min-width: 480px){ .modal-overlay-center .quickadd-img{ margin: 0 -18px 14px; } }
   .modal h2{ font-size: 16.5px; margin: 0 0 12px; }
   .modal img{ width:100%; border-radius: 12px; border:1px solid var(--border); margin-bottom: 14px; }
   .modal-tabs{ display:flex; gap:6px; margin-bottom: 12px; }
@@ -752,7 +765,7 @@ function QuickAddModal({ product, initialQty, onConfirm, onClose }){
   const handleConfirm = () => { onConfirm(product, qty); onClose(); };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay modal-overlay-center" onClick={onClose}>
       <div className="modal quickadd-modal" onClick={e => e.stopPropagation()}>
         <button type="button" className="modal-x" onClick={onClose} aria-label="ปิด"><IconClose /></button>
         <div className="quickadd-img">
@@ -799,7 +812,7 @@ function QuickAddModal({ product, initialQty, onConfirm, onClose }){
 
 function CartDrawer({ items, total, onInc, onDec, onCheckout, onClose }){
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay modal-overlay-center" onClick={onClose}>
       <div className="modal cart-modal" onClick={e => e.stopPropagation()}>
         <h2><IconCart /> ตะกร้าสินค้า</h2>
         {items.length === 0 ? (
