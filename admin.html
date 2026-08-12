@@ -93,13 +93,26 @@
 
   .field{ margin-bottom: 12px; }
   .field label{ display:block; font-size:12px; color: var(--text-dim); margin-bottom:5px; }
-  .field input[type=text], .field input[type=number], .field textarea{
+  .field input[type=text], .field input[type=number], .field textarea, .field select{
     width:100%; background: var(--bg-elev-2); border:1px solid var(--border); color: var(--text);
     border-radius: 10px; padding: 10px 12px; font-size: 14px; outline:none;
   }
+  .field select{ appearance:none; -webkit-appearance:none; }
   .field textarea{ resize: vertical; min-height: 64px; }
-  .field input:focus, .field textarea:focus{ border-color: var(--accent-dim); }
+  .field input:focus, .field textarea:focus, .field select:focus{ border-color: var(--accent-dim); }
   .row2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .cat-tree{ margin-bottom: 16px; }
+  .cat-row-admin{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .cat-row-admin:last-child{ border-bottom:none; }
+  .cat-row-admin-sub{ padding-left: 20px; }
+  .cat-row-admin-sub .cat-row-name::before{ content: "— "; color: var(--text-faint); }
+  .cat-row-name{ font-size:13.5px; font-weight:600; }
+  .cat-row-admin-sub .cat-row-name{ font-weight:500; color: var(--text-dim); }
+  .cat-form{ border-top: 1px solid var(--border); padding-top: 14px; }
 
   .img-pick{
     display:flex; align-items:center; gap:12px;
@@ -109,6 +122,7 @@
     border:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px;
   }
   .img-preview img{ width:100%; height:100%; object-fit:cover; }
+  .img-preview .placeholder-logo{ width:55%; height:auto; opacity:0.3; object-fit:contain; }
   .file-input{ font-size:12px; color: var(--text-dim); }
 
   .form-actions{ display:flex; gap:10px; margin-top: 16px; }
@@ -132,6 +146,7 @@
     border:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px;
   }
   .prod-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .prod-thumb .placeholder-logo{ width:55%; height:auto; opacity:0.3; object-fit:contain; }
   .prod-info{ flex:1; min-width:0; }
   .prod-name{ font-size:13.5px; font-weight:600; }
   .prod-meta{ font-size:11.5px; color: var(--text-faint); margin-top:2px; }
@@ -180,6 +195,58 @@ function formatBaht(n){
   return "฿" + num.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+// ---- Icons (no emoji — plain currentColor SVG marks) ----
+function IconEdit(){
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20 L4 16.5 L15.5 5 a2 2 0 0 1 2.8 0 l1.7 1.7 a2 2 0 0 1 0 2.8 L8.5 20 Z" />
+      <path d="M14 6.5 L17.5 10" />
+    </svg>
+  );
+}
+function IconTrash(){
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 7 H19" />
+      <path d="M9 7 V4.5 A1 1 0 0 1 10 3.5 H14 A1 1 0 0 1 15 4.5 V7" />
+      <path d="M7 7 L7.8 19.5 A1.5 1.5 0 0 0 9.3 21 H14.7 A1.5 1.5 0 0 0 16.2 19.5 L17 7" />
+    </svg>
+  );
+}
+function IconPlus(){
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M12 4 V20 M4 12 H20" />
+    </svg>
+  );
+}
+function IconBox(){
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 8 L12 4 L20.5 8 L12 12 Z" />
+      <path d="M3.5 8 V16.5 L12 20.5 L20.5 16.5 V8" />
+      <path d="M12 12 V20.5" />
+    </svg>
+  );
+}
+function IconLock(){
+  return (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="9.5" rx="2" />
+      <path d="M8 11 V7.5 a4 4 0 0 1 8 0 V11" />
+      <circle cx="12" cy="15.5" r="1.3" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function IconBlocked(){
+  return (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="12" cy="12" r="9" />
+      <line x1="5.8" y1="18.2" x2="18.2" y2="5.8" />
+    </svg>
+  );
+}
+
 function compressImage(file, maxDim = 900, quality = 0.82){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -205,7 +272,7 @@ function compressImage(file, maxDim = 900, quality = 0.82){
   });
 }
 
-const emptyForm = { id: null, name: "", description: "", price: "", stock_qty: "", image_url: "" };
+const emptyForm = { id: null, name: "", description: "", price: "", stock_qty: "", image_url: "", category_id: "" };
 
 function Toast({ msg, type, onDone }){
   useEffect(() => {
@@ -216,8 +283,13 @@ function Toast({ msg, type, onDone }){
   return <div className={"toast " + (type || "")}>{msg}</div>;
 }
 
-function ProductForm({ form, setForm, onSubmit, onCancel, saving }){
+function ProductForm({ form, setForm, onSubmit, onCancel, saving, categories }){
   const fileRef = useRef(null);
+  const mainCats = categories.filter(c => !c.parent_id);
+  const subByParent = {};
+  categories.filter(c => c.parent_id).forEach(c => {
+    (subByParent[c.parent_id] = subByParent[c.parent_id] || []).push(c);
+  });
 
   const handleFile = async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -232,13 +304,13 @@ function ProductForm({ form, setForm, onSubmit, onCancel, saving }){
 
   return (
     <div className="panel">
-      <h2>{form.id ? "✏️ แก้ไขสินค้า" : "➕ เพิ่มสินค้าใหม่"}</h2>
+      <h2>{form.id ? <IconEdit /> : <IconPlus />} {form.id ? "แก้ไขสินค้า" : "เพิ่มสินค้าใหม่"}</h2>
 
       <div className="field">
         <label>รูปสินค้า</label>
         <div className="img-pick">
           <div className="img-preview">
-            {form.image_url ? <img src={form.image_url} alt="" /> : "🐾"}
+            {form.image_url ? <img src={form.image_url} alt="" /> : <img className="placeholder-logo" src={LOGO_URI} alt="" />}
           </div>
           <input className="file-input" type="file" accept="image/*" ref={fileRef} onChange={handleFile} />
         </div>
@@ -252,6 +324,24 @@ function ProductForm({ form, setForm, onSubmit, onCancel, saving }){
       <div className="field">
         <label>รายละเอียด</label>
         <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="รายละเอียดสินค้า" />
+      </div>
+
+      <div className="field">
+        <label>หมวดหมู่</label>
+        <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}>
+          <option value="">— ไม่ระบุหมวดหมู่ —</option>
+          {mainCats.map(c => {
+            const subs = subByParent[c.id] || [];
+            if (subs.length > 0){
+              return (
+                <optgroup key={c.id} label={c.name}>
+                  {subs.map(sc => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
+                </optgroup>
+              );
+            }
+            return <option key={c.id} value={c.id}>{c.name}</option>;
+          })}
+        </select>
       </div>
 
       <div className="row2">
@@ -275,22 +365,140 @@ function ProductForm({ form, setForm, onSubmit, onCancel, saving }){
   );
 }
 
+function CategoryManager({ categories, onChange }){
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [form, setForm] = useState({ id: null, name: "", parent_id: "" });
+
+  const mainCats = categories.filter(c => !c.parent_id);
+  const subByParent = {};
+  categories.filter(c => c.parent_id).forEach(c => {
+    (subByParent[c.parent_id] = subByParent[c.parent_id] || []).push(c);
+  });
+
+  const resetForm = () => setForm({ id: null, name: "", parent_id: "" });
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    const hasChildren = form.id && categories.some(x => x.parent_id === form.id);
+    if (hasChildren && form.parent_id){
+      setToast({ msg: "หมวดหมู่นี้มีหมวดหมู่ย่อยอยู่ ย้ายเป็นหมวดหมู่ย่อยของหมวดอื่นไม่ได้", type: "err" });
+      return;
+    }
+    setSaving(true);
+    const siblings = categories.filter(c => (c.parent_id || null) === (form.parent_id || null) && c.id !== form.id);
+    const nextSort = siblings.length ? Math.max(...siblings.map(c => c.sort_order || 0)) + 10 : 10;
+    const payload = { name: form.name.trim(), parent_id: form.parent_id || null };
+    let error;
+    if (form.id){
+      ({ error } = await sb.from("shop_categories").update(payload).eq("id", form.id));
+    } else {
+      ({ error } = await sb.from("shop_categories").insert({ ...payload, sort_order: nextSort }));
+    }
+    setSaving(false);
+    if (error){
+      setToast({ msg: "บันทึกไม่สำเร็จ: " + error.message, type: "err" });
+    } else {
+      setToast({ msg: form.id ? "แก้ไขหมวดหมู่แล้ว" : "เพิ่มหมวดหมู่แล้ว", type: "ok" });
+      resetForm();
+      onChange();
+    }
+  };
+
+  const handleEdit = (c) => setForm({ id: c.id, name: c.name, parent_id: c.parent_id || "" });
+
+  const handleDelete = async (c) => {
+    const childCount = categories.filter(x => x.parent_id === c.id).length;
+    const msg = childCount > 0
+      ? `ลบหมวดหมู่ "${c.name}" ใช่หรือไม่? หมวดหมู่ย่อยอีก ${childCount} รายการข้างในจะถูกลบไปด้วย และสินค้าที่เคยอยู่ในหมวดนี้จะกลายเป็น "ไม่ระบุหมวดหมู่"`
+      : `ลบหมวดหมู่ "${c.name}" ใช่หรือไม่? สินค้าที่เคยอยู่ในหมวดนี้จะกลายเป็น "ไม่ระบุหมวดหมู่"`;
+    const ok = window.confirm(msg);
+    if (!ok) return;
+    const { error } = await sb.from("shop_categories").delete().eq("id", c.id);
+    if (error) setToast({ msg: "ลบไม่สำเร็จ: " + error.message, type: "err" });
+    else {
+      setToast({ msg: "ลบหมวดหมู่แล้ว", type: "ok" });
+      if (form.id === c.id) resetForm();
+      onChange();
+    }
+  };
+
+  return (
+    <div className="panel">
+      <h2><IconBox /> จัดการหมวดหมู่สินค้า</h2>
+
+      <div className="cat-tree">
+        {mainCats.length === 0 && <div className="state-box" style={{padding:"16px 0"}}>ยังไม่มีหมวดหมู่</div>}
+        {mainCats.map(c => (
+          <React.Fragment key={c.id}>
+            <div className="cat-row-admin">
+              <div className="cat-row-name">{c.name}</div>
+              <div className="prod-actions">
+                <button className="icon-btn" onClick={() => handleEdit(c)} title="แก้ไข"><IconEdit /></button>
+                <button className="icon-btn danger" onClick={() => handleDelete(c)} title="ลบ"><IconTrash /></button>
+              </div>
+            </div>
+            {(subByParent[c.id] || []).map(sc => (
+              <div className="cat-row-admin cat-row-admin-sub" key={sc.id}>
+                <div className="cat-row-name">{sc.name}</div>
+                <div className="prod-actions">
+                  <button className="icon-btn" onClick={() => handleEdit(sc)} title="แก้ไข"><IconEdit /></button>
+                  <button className="icon-btn danger" onClick={() => handleDelete(sc)} title="ลบ"><IconTrash /></button>
+                </div>
+              </div>
+            ))}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div className="cat-form">
+        <div className="field">
+          <label>{form.id ? "แก้ไขชื่อหมวดหมู่" : "ชื่อหมวดหมู่ใหม่"}</label>
+          <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="เช่น ด้วง หรือ ตัวเต็มวัย" />
+        </div>
+        <div className="field">
+          <label>อยู่ภายใต้หมวดหมู่หลัก</label>
+          <select value={form.parent_id} onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}>
+            <option value="">— ไม่มี (เป็นหมวดหมู่หลัก) —</option>
+            {mainCats.filter(c => c.id !== form.id).map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-actions">
+          {form.id && <button className="btn-cancel" onClick={resetForm} disabled={saving}>ยกเลิก</button>}
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving || !form.name.trim()}>
+            {saving ? "กำลังบันทึก..." : (form.id ? "บันทึกการแก้ไข" : "เพิ่มหมวดหมู่")}
+          </button>
+        </div>
+      </div>
+
+      <Toast msg={toast && toast.msg} type={toast && toast.type} onDone={() => setToast(null)} />
+    </div>
+  );
+}
+
 function AdminPanel({ session, onLogout }){
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const loadProducts = async () => {
+  const loadAll = async () => {
     setLoading(true);
-    const { data, error } = await sb.from("shop_products").select("*").order("created_at", { ascending: false });
-    if (error) setToast({ msg: "โหลดรายการสินค้าไม่สำเร็จ", type: "err" });
-    else setProducts(data || []);
+    const [prodRes, catRes] = await Promise.all([
+      sb.from("shop_products").select("*").order("created_at", { ascending: false }),
+      sb.from("shop_categories").select("*").order("sort_order", { ascending: true }),
+    ]);
+    if (prodRes.error || catRes.error) setToast({ msg: "โหลดข้อมูลไม่สำเร็จ", type: "err" });
+    setProducts(prodRes.data || []);
+    setCategories(catRes.data || []);
     setLoading(false);
   };
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => { loadAll(); }, []);
 
   const resetForm = () => setForm(emptyForm);
 
@@ -303,6 +511,7 @@ function AdminPanel({ session, onLogout }){
       price: Number(form.price),
       stock_qty: parseInt(form.stock_qty, 10),
       image_url: form.image_url || null,
+      category_id: form.category_id || null,
     };
     let error;
     if (form.id){
@@ -316,7 +525,7 @@ function AdminPanel({ session, onLogout }){
     } else {
       setToast({ msg: form.id ? "แก้ไขสินค้าเรียบร้อย" : "เพิ่มสินค้าเรียบร้อย", type: "ok" });
       resetForm();
-      loadProducts();
+      loadAll();
     }
   };
 
@@ -328,6 +537,7 @@ function AdminPanel({ session, onLogout }){
       price: String(p.price ?? ""),
       stock_qty: String(p.stock_qty ?? ""),
       image_url: p.image_url || "",
+      category_id: p.category_id || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -340,7 +550,7 @@ function AdminPanel({ session, onLogout }){
     else {
       setToast({ msg: "ลบสินค้าแล้ว", type: "ok" });
       if (form.id === p.id) resetForm();
-      loadProducts();
+      loadAll();
     }
   };
 
@@ -358,22 +568,24 @@ function AdminPanel({ session, onLogout }){
       </div>
 
       <div className="container">
-        <ProductForm form={form} setForm={setForm} onSubmit={handleSubmit} onCancel={resetForm} saving={saving} />
+        <ProductForm form={form} setForm={setForm} onSubmit={handleSubmit} onCancel={resetForm} saving={saving} categories={categories} />
+
+        <CategoryManager categories={categories} onChange={loadAll} />
 
         <div className="panel">
-          <h2>📦 รายการสินค้า ({products.length})</h2>
+          <h2><IconBox /> รายการสินค้า ({products.length})</h2>
           {loading && <div className="state-box"><div className="spinner"></div>กำลังโหลด...</div>}
           {!loading && products.length === 0 && <div className="state-box">ยังไม่มีสินค้า เพิ่มสินค้าแรกของคุณด้านบน</div>}
           {!loading && products.map(p => (
             <div className="prod-row" key={p.id}>
-              <div className="prod-thumb">{p.image_url ? <img src={p.image_url} alt="" /> : "🐾"}</div>
+              <div className="prod-thumb">{p.image_url ? <img src={p.image_url} alt="" /> : <img className="placeholder-logo" src={LOGO_URI} alt="" />}</div>
               <div className="prod-info">
                 <div className="prod-name">{p.name}</div>
                 <div className="prod-meta">{formatBaht(p.price)} · เหลือ {p.stock_qty} ชิ้น</div>
               </div>
               <div className="prod-actions">
-                <button className="icon-btn" onClick={() => handleEdit(p)} title="แก้ไข">✏️</button>
-                <button className="icon-btn danger" onClick={() => handleDelete(p)} title="ลบ">🗑️</button>
+                <button className="icon-btn" onClick={() => handleEdit(p)} title="แก้ไข"><IconEdit /></button>
+                <button className="icon-btn danger" onClick={() => handleDelete(p)} title="ลบ"><IconTrash /></button>
               </div>
             </div>
           ))}
@@ -397,7 +609,7 @@ function LoginScreen(){
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <div className="emoji">🔒</div>
+        <div className="emoji"><IconLock /></div>
         <h1>เข้าสู่ระบบผู้ดูแลร้าน</h1>
         <p>หน้านี้สำหรับผู้ดูแลร้าน Phumjai เท่านั้น กรุณาเข้าสู่ระบบด้วยบัญชี Google ที่ได้รับสิทธิ์</p>
         <button className="btn-google" onClick={signIn} disabled={busy}>
@@ -412,7 +624,7 @@ function UnauthorizedScreen({ email, onLogout }){
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <div className="emoji">⛔</div>
+        <div className="emoji"><IconBlocked /></div>
         <h1>บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้</h1>
         <p>
           เข้าสู่ระบบด้วย <strong>{email}</strong> แล้ว แต่บัญชีนี้ไม่ได้รับสิทธิ์ผู้ดูแลร้าน Phumjai<br />
