@@ -863,8 +863,8 @@ function OrderModal({ items, total, imageUrl, onClose }){
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay modal-overlay-center" onClick={onClose}>
+      <div className="modal order-modal" onClick={e => e.stopPropagation()}>
         <h2>สรุปคำสั่งซื้อของคุณ</h2>
 
         <div className="modal-tabs">
