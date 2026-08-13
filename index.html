@@ -203,6 +203,7 @@
   .card-price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:2px; }
   .card-price{ font-size: 15px; font-weight:700; color: var(--accent); }
   .card-stock{ font-size: 10.5px; color: var(--text-faint); white-space:nowrap; }
+  .card-option-hint{ font-size: 10.5px; color: var(--text-faint); margin-top:2px; }
   .card-in-cart{
     margin-top: auto; padding-top:8px;
     display:flex; align-items:center; gap:5px;
@@ -301,6 +302,16 @@
   .quickadd-img .placeholder{ width:38%; height:auto; opacity:0.3; object-fit:contain; }
   .quickadd-name{ font-size:16px; font-weight:700; margin-bottom:4px; }
   .quickadd-desc{ font-size:13px; color: var(--text-dim); line-height:1.6; margin-bottom:8px; }
+  .option-group{ margin-bottom:10px; }
+  .option-group-label{ font-size:11.5px; color: var(--text-dim); margin-bottom:6px; }
+  .option-chips{ display:flex; flex-wrap:wrap; gap:7px; }
+  .option-chip{
+    background: var(--bg-elev-2); color: var(--text-dim);
+    border:1px solid var(--border); border-radius: 999px;
+    padding: 7px 13px; font-size: 12.5px; font-weight:600;
+  }
+  .option-chip.active{ background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .option-chip.disabled, .option-chip:disabled{ opacity:0.4; text-decoration: line-through; }
   .quickadd-actions{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
     margin-top: 16px;
@@ -705,7 +716,14 @@ function roundRect(ctx, x, y, w, h, r){
 
 // ---- Components ----
 function ProductCard({ product, qty, onOpen }){
-  const outOfStock = (product.stock_qty ?? 0) <= 0;
+  const hasOptions = Array.isArray(product.options) && product.options.length > 0;
+  const totalStock = hasOptions
+    ? product.options.reduce((s, o) => s + (Number(o.stock_qty) || 0), 0)
+    : (product.stock_qty ?? 0);
+  const outOfStock = totalStock <= 0;
+  const minPrice = hasOptions
+    ? Math.min(...product.options.map(o => Number(o.price) || 0))
+    : (Number(product.price) || 0);
   const isBestseller = !!product.is_bestseller;
   const isNew = !isBestseller && isProductNew(product);
   const images = (Array.isArray(product.image_urls) && product.image_urls.length)
@@ -740,19 +758,32 @@ function ProductCard({ product, qty, onOpen }){
         <div className="card-name">{product.name}</div>
         {product.description && <div className="card-desc">{product.description}</div>}
         <div className="card-price-row">
-          <div className="card-price">{formatBaht(product.price)}</div>
-          {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
+          <div className="card-price">{hasOptions ? "เริ่มต้น " + formatBaht(minPrice) : formatBaht(minPrice)}</div>
+          {!outOfStock && <div className="card-stock">เหลือ {totalStock} ชิ้น</div>}
         </div>
+        {hasOptions && <div className="card-option-hint">{product.option_group_name || "มีตัวเลือก"} · {product.options.length} แบบ</div>}
         {qty > 0 && <div className="card-in-cart"><IconCheck /> ในตะกร้า {qty} ชิ้น</div>}
       </div>
     </div>
   );
 }
 
-function QuickAddModal({ product, initialQty, onConfirm, onClose }){
-  const outOfStock = (product.stock_qty ?? 0) <= 0;
-  const [qty, setQty] = useState(outOfStock ? 0 : (initialQty > 0 ? initialQty : 1));
-  const atMax = qty >= (product.stock_qty ?? 0);
+function QuickAddModal({ product, cart, onConfirm, onClose }){
+  const hasOptions = Array.isArray(product.options) && product.options.length > 0;
+  const [selectedOptionId, setSelectedOptionId] = useState(hasOptions ? product.options[0].id : null);
+  const selectedOption = hasOptions ? product.options.find(o => o.id === selectedOptionId) : null;
+  const effectivePrice = hasOptions ? (Number(selectedOption && selectedOption.price) || 0) : (Number(product.price) || 0);
+  const effectiveStock = hasOptions ? (selectedOption ? (Number(selectedOption.stock_qty) || 0) : 0) : (product.stock_qty ?? 0);
+  const outOfStock = effectiveStock <= 0;
+  const cartKey = hasOptions ? (product.id + "::" + selectedOptionId) : String(product.id);
+
+  const [qty, setQty] = useState(0);
+  useEffect(() => {
+    const existing = cart[cartKey] || 0;
+    setQty(outOfStock ? 0 : (existing > 0 ? existing : 1));
+  }, [cartKey]);
+
+  const atMax = qty >= effectiveStock;
   const images = (Array.isArray(product.image_urls) && product.image_urls.length)
     ? product.image_urls
     : (product.image_url ? [product.image_url] : []);
@@ -761,8 +792,8 @@ function QuickAddModal({ product, initialQty, onConfirm, onClose }){
   const prevImg = () => setImgIdx(i => (i - 1 + images.length) % images.length);
   const nextImg = () => setImgIdx(i => (i + 1) % images.length);
   const dec = () => setQty(q => Math.max(0, q - 1));
-  const inc = () => setQty(q => Math.min(product.stock_qty ?? 0, q + 1));
-  const handleConfirm = () => { onConfirm(product, qty); onClose(); };
+  const inc = () => setQty(q => Math.min(effectiveStock, q + 1));
+  const handleConfirm = () => { onConfirm(product, qty, selectedOption); onClose(); };
 
   return (
     <div className="modal-overlay modal-overlay-center" onClick={onClose}>
@@ -790,9 +821,32 @@ function QuickAddModal({ product, initialQty, onConfirm, onClose }){
         <div className="quickadd-body">
           <div className="quickadd-name">{product.name}</div>
           {product.description && <div className="quickadd-desc">{product.description}</div>}
+
+          {hasOptions && (
+            <div className="option-group">
+              <div className="option-group-label">{product.option_group_name || "ตัวเลือก"}</div>
+              <div className="option-chips">
+                {product.options.map(o => {
+                  const stock = Number(o.stock_qty) || 0;
+                  return (
+                    <button
+                      type="button"
+                      key={o.id}
+                      className={"option-chip" + (o.id === selectedOptionId ? " active" : "") + (stock <= 0 ? " disabled" : "")}
+                      onClick={() => setSelectedOptionId(o.id)}
+                      disabled={stock <= 0}
+                    >
+                      {o.label}{stock <= 0 ? " (หมด)" : ""}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="card-price-row">
-            <div className="card-price">{formatBaht(product.price)}</div>
-            {!outOfStock && <div className="card-stock">เหลือ {product.stock_qty} ชิ้น</div>}
+            <div className="card-price">{formatBaht(effectivePrice)}</div>
+            {!outOfStock && <div className="card-stock">เหลือ {effectiveStock} ชิ้น</div>}
           </div>
           <div className="quickadd-actions">
             <div className="stepper stepper-lg">
@@ -826,9 +880,9 @@ function CartDrawer({ items, total, onInc, onDec, onCheckout, onClose }){
                   <div className="cart-row-price">{formatBaht(it.price)} / ชิ้น</div>
                 </div>
                 <div className="stepper">
-                  <button onClick={() => onDec(it.product)} disabled={it.qty <= 0}>−</button>
+                  <button onClick={() => onDec(it)} disabled={it.qty <= 0}>−</button>
                   <span className="qty">{it.qty}</span>
-                  <button onClick={() => onInc(it.product)} disabled={it.qty >= it.stock_qty}>+</button>
+                  <button onClick={() => onInc(it)} disabled={it.qty >= it.stock_qty}>+</button>
                 </div>
                 <div className="cart-row-subtotal">{formatBaht(it.price * it.qty)}</div>
               </div>
@@ -969,38 +1023,66 @@ function App(){
       .slice(0, 12);
   }, [products]);
 
-  const inc = (p) => {
+  // ตะกร้าเก็บด้วย key: "<productId>" (สินค้าไม่มีตัวเลือก) หรือ "<productId>::<optionId>" (สินค้ามีตัวเลือก)
+  // เพื่อให้สินค้าตัวเดียวกันคนละตัวเลือก (เช่น ไซซ์ต่างกัน) นับเป็นรายการแยกกันในตะกร้า
+  const cartKeyFor = (productId, optionId) => optionId ? (productId + "::" + optionId) : String(productId);
+
+  const incByKey = (key, stockQty) => {
     setCart(prev => {
-      const cur = prev[p.id] || 0;
-      if (cur >= (p.stock_qty ?? 0)) return prev;
-      return { ...prev, [p.id]: cur + 1 };
+      const cur = prev[key] || 0;
+      if (cur >= stockQty) return prev;
+      return { ...prev, [key]: cur + 1 };
     });
   };
-  const dec = (p) => {
+  const decByKey = (key) => {
     setCart(prev => {
-      const cur = prev[p.id] || 0;
+      const cur = prev[key] || 0;
       if (cur <= 0) return prev;
-      const next = { ...prev, [p.id]: cur - 1 };
-      if (next[p.id] === 0) delete next[p.id];
+      const next = { ...prev, [key]: cur - 1 };
+      if (next[key] === 0) delete next[key];
       return next;
     });
   };
 
-  const setCartQty = (product, qty) => {
+  const setCartQty = (product, qty, option) => {
+    const key = cartKeyFor(product.id, option ? option.id : null);
+    const stockQty = option ? (Number(option.stock_qty) || 0) : (product.stock_qty ?? 0);
     setCart(prev => {
       const next = { ...prev };
-      if (qty <= 0) delete next[product.id];
-      else next[product.id] = qty;
+      const capped = Math.max(0, Math.min(qty, stockQty));
+      if (capped <= 0) delete next[key];
+      else next[key] = capped;
       return next;
     });
+  };
+
+  // จำนวนรวมของสินค้าชิ้นนี้ในตะกร้า (รวมทุกตัวเลือกเข้าด้วยกัน) — ใช้แสดงป้าย "ในตะกร้า" บนการ์ด
+  const qtyForProduct = (productId) => {
+    const prefix = String(productId);
+    return Object.entries(cart).reduce((sum, [key, qty]) => {
+      const pid = key.split("::")[0];
+      return pid === prefix ? sum + qty : sum;
+    }, 0);
   };
 
   const cartItems = useMemo(() => {
     return Object.entries(cart)
-      .map(([id, qty]) => {
-        const p = products.find(pr => String(pr.id) === String(id));
-        if (!p || qty <= 0) return null;
-        return { id, name: p.name, price: Number(p.price) || 0, qty, stock_qty: p.stock_qty ?? 0, product: p };
+      .map(([key, qty]) => {
+        if (qty <= 0) return null;
+        const [productId, optionId] = key.split("::");
+        const p = products.find(pr => String(pr.id) === productId);
+        if (!p) return null;
+        let price = Number(p.price) || 0;
+        let stockQty = p.stock_qty ?? 0;
+        let name = p.name;
+        if (optionId) {
+          const option = Array.isArray(p.options) ? p.options.find(o => String(o.id) === optionId) : null;
+          if (!option) return null;
+          price = Number(option.price) || 0;
+          stockQty = Number(option.stock_qty) || 0;
+          name = p.name + " - " + option.label;
+        }
+        return { id: key, key, name, price, qty, stock_qty: stockQty, product: p, optionId: optionId || null };
       })
       .filter(Boolean);
   }, [cart, products]);
@@ -1051,7 +1133,7 @@ function App(){
                 <div className="featured-item" key={p.id}>
                   <ProductCard
                     product={p}
-                    qty={cart[p.id] || 0}
+                    qty={qtyForProduct(p.id)}
                     onOpen={setQuickAddProduct}
                   />
                 </div>
@@ -1111,7 +1193,7 @@ function App(){
               <ProductCard
                 key={p.id}
                 product={p}
-                qty={cart[p.id] || 0}
+                qty={qtyForProduct(p.id)}
                 onOpen={setQuickAddProduct}
               />
             ))}
@@ -1125,7 +1207,7 @@ function App(){
         <QuickAddModal
           key={quickAddProduct.id}
           product={quickAddProduct}
-          initialQty={cart[quickAddProduct.id] || 0}
+          cart={cart}
           onConfirm={setCartQty}
           onClose={() => setQuickAddProduct(null)}
         />
@@ -1135,8 +1217,8 @@ function App(){
         <CartDrawer
           items={cartItems}
           total={totalPrice}
-          onInc={inc}
-          onDec={dec}
+          onInc={(it) => incByKey(it.key, it.stock_qty)}
+          onDec={(it) => decByKey(it.key)}
           onCheckout={() => { setCartOpen(false); confirmOrder(); }}
           onClose={() => setCartOpen(false)}
         />
