@@ -136,6 +136,11 @@
   .cat-row-name{ font-size:13.5px; font-weight:600; }
   .cat-row-admin-sub .cat-row-name{ font-weight:500; color: var(--text-dim); }
   .cat-form{ border-top: 1px solid var(--border); padding-top: 14px; }
+  .shiprate-group{ margin-bottom: 14px; }
+  .shiprate-group-title{
+    font-size: 11.5px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase;
+    color: var(--text-faint); margin: 0 0 4px;
+  }
 
   .img-pick{
     display:flex; align-items:center; gap:12px;
@@ -330,7 +335,12 @@ function compressImage(file, maxDim = 900, quality = 0.82){
   });
 }
 
-const emptyForm = { id: null, name: "", description: "", price: "", stock_qty: "", image_url: "", image_urls: [], category_id: "", is_bestseller: false, has_options: false, option_group_name: "", options: [] };
+const emptyForm = { id: null, name: "", description: "", price: "", stock_qty: "", weight_g: "", image_url: "", image_urls: [], category_id: "", is_bestseller: false, has_options: false, option_group_name: "", options: [] };
+
+const SHIPPING_METHODS = [
+  { value: "flash", label: "Flash Express" },
+  { value: "ems", label: "EMS" },
+];
 
 function genOptionId(){
   return (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : ("opt_" + Math.random().toString(36).slice(2) + Date.now().toString(36));
@@ -445,6 +455,11 @@ function ProductForm({ form, setForm, onSubmit, onCancel, saving, categories }){
             return <option key={c.id} value={c.id}>{c.name}</option>;
           })}
         </select>
+      </div>
+
+      <div className="field">
+        <label>น้ำหนักสินค้า (กรัม) — ใช้คำนวณค่าส่ง Flash Express / EMS ให้ลูกค้าอัตโนมัติ</label>
+        <input type="number" min="0" step="1" value={form.weight_g} onChange={e => setForm(f => ({ ...f, weight_g: e.target.value }))} placeholder="0" />
       </div>
 
       <label className="checkbox-field">
@@ -653,6 +668,121 @@ function CategoryManager({ categories, onChange }){
   );
 }
 
+function ShippingRatesManager({ rates, onChange }){
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const emptyRateForm = { id: null, method: "flash", min_weight_g: "", max_weight_g: "", price: "" };
+  const [form, setForm] = useState(emptyRateForm);
+
+  const resetForm = () => setForm(emptyRateForm);
+
+  const ratesByMethod = (m) => rates.filter(r => r.method === m).sort((a, b) => (a.min_weight_g || 0) - (b.min_weight_g || 0));
+
+  const isValid = form.min_weight_g !== "" && form.price !== "";
+
+  const handleSubmit = async () => {
+    if (!isValid) return;
+    setSaving(true);
+    const payload = {
+      method: form.method,
+      min_weight_g: parseInt(form.min_weight_g, 10) || 0,
+      max_weight_g: form.max_weight_g === "" ? null : (parseInt(form.max_weight_g, 10) || 0),
+      price: Number(form.price) || 0,
+    };
+    let error;
+    if (form.id){
+      ({ error } = await sb.from("shop_shipping_rates").update(payload).eq("id", form.id));
+    } else {
+      const siblings = rates.filter(r => r.method === form.method);
+      const nextSort = siblings.length ? Math.max(...siblings.map(r => r.sort_order || 0)) + 10 : 10;
+      ({ error } = await sb.from("shop_shipping_rates").insert({ ...payload, sort_order: nextSort }));
+    }
+    setSaving(false);
+    if (error){
+      setToast({ msg: "บันทึกไม่สำเร็จ: " + error.message, type: "err" });
+    } else {
+      setToast({ msg: form.id ? "แก้ไขอัตราค่าส่งแล้ว" : "เพิ่มอัตราค่าส่งแล้ว", type: "ok" });
+      resetForm();
+      onChange();
+    }
+  };
+
+  const handleEdit = (r) => setForm({
+    id: r.id,
+    method: r.method,
+    min_weight_g: String(r.min_weight_g ?? ""),
+    max_weight_g: r.max_weight_g == null ? "" : String(r.max_weight_g),
+    price: String(r.price ?? ""),
+  });
+
+  const handleDelete = async (r) => {
+    const ok = window.confirm("ลบอัตราค่าส่งนี้ใช่หรือไม่?");
+    if (!ok) return;
+    const { error } = await sb.from("shop_shipping_rates").delete().eq("id", r.id);
+    if (error) setToast({ msg: "ลบไม่สำเร็จ: " + error.message, type: "err" });
+    else {
+      setToast({ msg: "ลบแล้ว", type: "ok" });
+      if (form.id === r.id) resetForm();
+      onChange();
+    }
+  };
+
+  const rangeLabel = (r) => `${r.min_weight_g} - ${r.max_weight_g == null ? "ไม่จำกัด" : r.max_weight_g} กรัม`;
+
+  return (
+    <div className="panel">
+      <h2><IconBox /> ตั้งค่าอัตราค่าส่ง (Flash Express / EMS)</h2>
+
+      {SHIPPING_METHODS.map(m => (
+        <div key={m.value} className="shiprate-group">
+          <div className="shiprate-group-title">{m.label}</div>
+          {ratesByMethod(m.value).length === 0 && <div className="state-box" style={{padding:"10px 0"}}>ยังไม่มีอัตราค่าส่ง</div>}
+          {ratesByMethod(m.value).map(r => (
+            <div className="cat-row-admin" key={r.id}>
+              <div className="cat-row-name">{rangeLabel(r)} — {formatBaht(r.price)}</div>
+              <div className="prod-actions">
+                <button className="icon-btn" onClick={() => handleEdit(r)} title="แก้ไข"><IconEdit /></button>
+                <button className="icon-btn danger" onClick={() => handleDelete(r)} title="ลบ"><IconTrash /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div className="cat-form">
+        <div className="field">
+          <label>{form.id ? "แก้ไขอัตราค่าส่ง" : "เพิ่มอัตราค่าส่งใหม่"}</label>
+          <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))}>
+            {SHIPPING_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+        </div>
+        <div className="row2">
+          <div className="field">
+            <label>น้ำหนักตั้งแต่ (กรัม)</label>
+            <input type="number" min="0" step="1" value={form.min_weight_g} onChange={e => setForm(f => ({ ...f, min_weight_g: e.target.value }))} placeholder="0" />
+          </div>
+          <div className="field">
+            <label>ถึง (กรัม, เว้นว่าง = ไม่จำกัด)</label>
+            <input type="number" min="0" step="1" value={form.max_weight_g} onChange={e => setForm(f => ({ ...f, max_weight_g: e.target.value }))} placeholder="ไม่จำกัด" />
+          </div>
+        </div>
+        <div className="field">
+          <label>ค่าส่ง (บาท)</label>
+          <input type="number" min="0" step="1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" />
+        </div>
+        <div className="form-actions">
+          {form.id && <button className="btn-cancel" onClick={resetForm} disabled={saving}>ยกเลิก</button>}
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving || !isValid}>
+            {saving ? "กำลังบันทึก..." : (form.id ? "บันทึกการแก้ไข" : "เพิ่มอัตราค่าส่ง")}
+          </button>
+        </div>
+      </div>
+
+      <Toast msg={toast && toast.msg} type={toast && toast.type} onDone={() => setToast(null)} />
+    </div>
+  );
+}
+
 function AdminPanel({ session, onLogout }){
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -660,16 +790,19 @@ function AdminPanel({ session, onLogout }){
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [shippingRates, setShippingRates] = useState([]);
 
   const loadAll = async () => {
     setLoading(true);
-    const [prodRes, catRes] = await Promise.all([
+    const [prodRes, catRes, shipRes] = await Promise.all([
       sb.from("shop_products").select("*").order("created_at", { ascending: false }),
       sb.from("shop_categories").select("*").order("sort_order", { ascending: true }),
+      sb.from("shop_shipping_rates").select("*"),
     ]);
-    if (prodRes.error || catRes.error) setToast({ msg: "โหลดข้อมูลไม่สำเร็จ", type: "err" });
+    if (prodRes.error || catRes.error || shipRes.error) setToast({ msg: "โหลดข้อมูลไม่สำเร็จ", type: "err" });
     setProducts(prodRes.data || []);
     setCategories(catRes.data || []);
+    setShippingRates(shipRes.data || []);
     setLoading(false);
   };
 
@@ -709,6 +842,7 @@ function AdminPanel({ session, onLogout }){
       image_urls: form.image_urls && form.image_urls.length ? form.image_urls : [],
       category_id: form.category_id || null,
       is_bestseller: !!form.is_bestseller,
+      weight_g: parseInt(form.weight_g, 10) || 0,
       option_group_name: optionGroupName,
       options,
     };
@@ -735,6 +869,7 @@ function AdminPanel({ session, onLogout }){
       description: p.description || "",
       price: String(p.price ?? ""),
       stock_qty: String(p.stock_qty ?? ""),
+      weight_g: String(p.weight_g ?? ""),
       image_url: p.image_url || "",
       image_urls: Array.isArray(p.image_urls) && p.image_urls.length ? p.image_urls : (p.image_url ? [p.image_url] : []),
       category_id: p.category_id || "",
@@ -778,6 +913,8 @@ function AdminPanel({ session, onLogout }){
 
         <CategoryManager categories={categories} onChange={loadAll} />
 
+        <ShippingRatesManager rates={shippingRates} onChange={loadAll} />
+
         <div className="panel">
           <h2><IconBox /> รายการสินค้า ({products.length})</h2>
           {loading && <div className="state-box"><div className="spinner"></div>กำลังโหลด...</div>}
@@ -794,6 +931,7 @@ function AdminPanel({ session, onLogout }){
                   {Array.isArray(p.options) && p.options.length > 0
                     ? "เริ่มต้น " + formatBaht(p.price) + " · " + (p.option_group_name || "ตัวเลือก") + " " + p.options.length + " แบบ"
                     : formatBaht(p.price) + " · เหลือ " + p.stock_qty + " ชิ้น"}
+                  {p.weight_g > 0 ? " · " + p.weight_g + "ก." : ""}
                 </div>
               </div>
               <div className="prod-actions">
