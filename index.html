@@ -818,6 +818,8 @@ function ProductCard({ product, qty, onOpen }){
 function QuickAddModal({ product, cart, onConfirm, onClose }){
   const hasOptions = Array.isArray(product.options) && product.options.length > 0;
   const [selectedOptionId, setSelectedOptionId] = useState(hasOptions ? product.options[0].id : null);
+  // เปิดหน้าต่างมาต้องเห็นรูปหลักของสินค้าก่อนเสมอ รูปจะเปลี่ยนตามตัวเลือกก็ต่อเมื่อลูกค้ากดเลือกตัวเลือกเองแล้วเท่านั้น
+  const [optionPicked, setOptionPicked] = useState(false);
   const selectedOption = hasOptions ? product.options.find(o => o.id === selectedOptionId) : null;
   const effectivePrice = hasOptions ? (Number(selectedOption && selectedOption.price) || 0) : (Number(product.price) || 0);
   const effectiveStock = hasOptions ? (selectedOption ? (Number(selectedOption.stock_qty) || 0) : 0) : (product.stock_qty ?? 0);
@@ -831,14 +833,14 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
   }, [cartKey]);
 
   const atMax = qty >= effectiveStock;
-  const optionImage = (hasOptions && selectedOption && selectedOption.image_url) ? selectedOption.image_url : null;
+  const optionImage = (optionPicked && hasOptions && selectedOption && selectedOption.image_url) ? selectedOption.image_url : null;
   const images = optionImage
     ? [optionImage]
     : ((Array.isArray(product.image_urls) && product.image_urls.length)
       ? product.image_urls
       : (product.image_url ? [product.image_url] : []));
   const [imgIdx, setImgIdx] = useState(0);
-  useEffect(() => { setImgIdx(0); }, [selectedOptionId]);
+  useEffect(() => { setImgIdx(0); }, [selectedOptionId, optionPicked]);
   const showGalleryNav = images.length > 1;
   const prevImg = () => setImgIdx(i => (i - 1 + images.length) % images.length);
   const nextImg = () => setImgIdx(i => (i + 1) % images.length);
@@ -884,7 +886,7 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
                       type="button"
                       key={o.id}
                       className={"option-chip" + (o.id === selectedOptionId ? " active" : "") + (stock <= 0 ? " disabled" : "")}
-                      onClick={() => setSelectedOptionId(o.id)}
+                      onClick={() => { setSelectedOptionId(o.id); setOptionPicked(true); }}
                       disabled={stock <= 0}
                     >
                       {o.label}{stock <= 0 ? " (หมด)" : ""}
