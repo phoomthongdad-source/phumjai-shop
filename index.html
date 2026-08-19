@@ -319,6 +319,7 @@ var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,
   }
   .option-chip.active{ background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .option-chip.disabled, .option-chip:disabled{ opacity:0.4; text-decoration: line-through; }
+  .option-required-hint{ font-size:11.5px; color: var(--accent); margin-bottom:8px; }
   .quickadd-actions{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
     margin-top: 16px;
@@ -817,43 +818,56 @@ function ProductCard({ product, qty, onOpen }){
 
 function QuickAddModal({ product, cart, onConfirm, onClose }){
   const hasOptions = Array.isArray(product.options) && product.options.length > 0;
-  const [selectedOptionId, setSelectedOptionId] = useState(hasOptions ? product.options[0].id : null);
-  // เปิดหน้าต่างมาต้องเห็นรูปหลักของสินค้าก่อนเสมอ รูปจะเปลี่ยนตามตัวเลือกก็ต่อเมื่อลูกค้ากดเลือกตัวเลือกเองแล้วเท่านั้น
-  const [optionPicked, setOptionPicked] = useState(false);
-  const selectedOption = hasOptions ? product.options.find(o => o.id === selectedOptionId) : null;
-  const effectivePrice = hasOptions ? (Number(selectedOption && selectedOption.price) || 0) : (Number(product.price) || 0);
-  const effectiveStock = hasOptions ? (selectedOption ? (Number(selectedOption.stock_qty) || 0) : 0) : (product.stock_qty ?? 0);
+  // เปิดหน้าต่างมาต้องเห็นรูปหลักของสินค้าก่อนเสมอ และห้ามไฮไลต์ตัวเลือกใดไว้ล่วงหน้า
+  // ลูกค้าต้องเป็นคนกดเลือกตัวเลือกเองเท่านั้น ราคา/สต็อก/รูปภาพจะยังไม่ระบุจนกว่าจะเลือก
+  const [selectedOptionId, setSelectedOptionId] = useState(null);
+  const selectedOption = hasOptions ? (product.options.find(o => o.id === selectedOptionId) || null) : null;
+  const optionRequired = hasOptions && !selectedOption;
+
+  const totalStock = hasOptions
+    ? product.options.reduce((s, o) => s + (Number(o.stock_qty) || 0), 0)
+    : (product.stock_qty ?? 0);
+  const productOutOfStock = totalStock <= 0;
+
+  const minOptionPrice = hasOptions ? Math.min(...product.options.map(o => Number(o.price) || 0)) : null;
+  const effectivePrice = hasOptions
+    ? (selectedOption ? (Number(selectedOption.price) || 0) : minOptionPrice)
+    : (Number(product.price) || 0);
+  const effectiveStock = hasOptions
+    ? (selectedOption ? (Number(selectedOption.stock_qty) || 0) : 0)
+    : (product.stock_qty ?? 0);
   const outOfStock = effectiveStock <= 0;
-  const cartKey = hasOptions ? (product.id + "::" + selectedOptionId) : String(product.id);
+  const cartKey = hasOptions ? (selectedOption ? (product.id + "::" + selectedOptionId) : null) : String(product.id);
 
   const [qty, setQty] = useState(0);
   useEffect(() => {
+    if (!cartKey) { setQty(0); return; }
     const existing = cart[cartKey] || 0;
     setQty(outOfStock ? 0 : (existing > 0 ? existing : 1));
   }, [cartKey]);
 
   const atMax = qty >= effectiveStock;
-  const optionImage = (optionPicked && hasOptions && selectedOption && selectedOption.image_url) ? selectedOption.image_url : null;
+  const optionImage = (hasOptions && selectedOption && selectedOption.image_url) ? selectedOption.image_url : null;
   const images = optionImage
     ? [optionImage]
     : ((Array.isArray(product.image_urls) && product.image_urls.length)
       ? product.image_urls
       : (product.image_url ? [product.image_url] : []));
   const [imgIdx, setImgIdx] = useState(0);
-  useEffect(() => { setImgIdx(0); }, [selectedOptionId, optionPicked]);
+  useEffect(() => { setImgIdx(0); }, [selectedOptionId]);
   const showGalleryNav = images.length > 1;
   const prevImg = () => setImgIdx(i => (i - 1 + images.length) % images.length);
   const nextImg = () => setImgIdx(i => (i + 1) % images.length);
   const dec = () => setQty(q => Math.max(0, q - 1));
   const inc = () => setQty(q => Math.min(effectiveStock, q + 1));
-  const handleConfirm = () => { onConfirm(product, qty, selectedOption); onClose(); };
+  const handleConfirm = () => { if (optionRequired) return; onConfirm(product, qty, selectedOption); onClose(); };
 
   return (
     <div className="modal-overlay modal-overlay-center" onClick={onClose}>
       <div className="modal quickadd-modal" onClick={e => e.stopPropagation()}>
         <button type="button" className="modal-x" onClick={onClose} aria-label="ปิด"><IconClose /></button>
         <div className="quickadd-img">
-          {outOfStock && <div className="badge-out">สินค้าหมด</div>}
+          {productOutOfStock && <div className="badge-out">สินค้าหมด</div>}
           {product.is_bestseller && <div className="badge-tag badge-bestseller">ขายดี</div>}
           {!product.is_bestseller && isProductNew(product) && <div className="badge-tag badge-new">ใหม่</div>}
           {images.length
@@ -886,7 +900,7 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
                       type="button"
                       key={o.id}
                       className={"option-chip" + (o.id === selectedOptionId ? " active" : "") + (stock <= 0 ? " disabled" : "")}
-                      onClick={() => { setSelectedOptionId(o.id); setOptionPicked(true); }}
+                      onClick={() => setSelectedOptionId(o.id)}
                       disabled={stock <= 0}
                     >
                       {o.label}{stock <= 0 ? " (หมด)" : ""}
@@ -898,16 +912,17 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
           )}
 
           <div className="card-price-row">
-            <div className="card-price">{formatBaht(effectivePrice)}</div>
-            {!outOfStock && <div className="card-stock">เหลือ {effectiveStock} ชิ้น</div>}
+            <div className="card-price">{optionRequired ? "เริ่มต้น " + formatBaht(effectivePrice) : formatBaht(effectivePrice)}</div>
+            {!optionRequired && !outOfStock && <div className="card-stock">เหลือ {effectiveStock} ชิ้น</div>}
           </div>
+          {optionRequired && <div className="option-required-hint">กรุณาเลือก{product.option_group_name || "ตัวเลือก"}ก่อนเพิ่มลงตะกร้า</div>}
           <div className="quickadd-actions">
             <div className="stepper stepper-lg">
               <button onClick={dec} disabled={qty <= 0}>−</button>
               <span className="qty">{qty}</span>
-              <button onClick={inc} disabled={outOfStock || atMax}>+</button>
+              <button onClick={inc} disabled={optionRequired || outOfStock || atMax}>+</button>
             </div>
-            <button type="button" className="btn-confirm" onClick={handleConfirm} disabled={outOfStock} aria-label="ยืนยันเพิ่มลงตะกร้า" title="ยืนยันเพิ่มลงตะกร้า">
+            <button type="button" className="btn-confirm" onClick={handleConfirm} disabled={optionRequired || outOfStock} aria-label="ยืนยันเพิ่มลงตะกร้า" title="ยืนยันเพิ่มลงตะกร้า">
               <IconCheck />
             </button>
           </div>
