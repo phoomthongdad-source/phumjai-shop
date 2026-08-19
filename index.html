@@ -210,7 +210,6 @@ var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,
   .card-price-row{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:2px; }
   .card-price{ font-size: 15px; font-weight:700; color: var(--accent); }
   .card-stock{ font-size: 10.5px; color: var(--text-faint); white-space:nowrap; }
-  .card-option-hint{ font-size: 10.5px; color: var(--text-faint); margin-top:2px; }
   .card-in-cart{
     margin-top: auto; padding-top:8px;
     display:flex; align-items:center; gap:5px;
@@ -809,7 +808,6 @@ function ProductCard({ product, qty, onOpen }){
           <div className="card-price">{hasOptions ? "เริ่มต้น " + formatBaht(minPrice) : formatBaht(minPrice)}</div>
           {!outOfStock && <div className="card-stock">เหลือ {totalStock} ชิ้น</div>}
         </div>
-        {hasOptions && <div className="card-option-hint">{product.option_group_name || "มีตัวเลือก"} · {product.options.length} แบบ</div>}
         {qty > 0 && <div className="card-in-cart"><IconCheck /> ในตะกร้า {qty} ชิ้น</div>}
       </div>
     </div>
