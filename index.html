@@ -847,14 +847,20 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
   }, [cartKey]);
 
   const atMax = qty >= effectiveStock;
-  const optionImage = (hasOptions && selectedOption && selectedOption.image_url) ? selectedOption.image_url : null;
-  const images = optionImage
-    ? [optionImage]
-    : ((Array.isArray(product.image_urls) && product.image_urls.length)
-      ? product.image_urls
-      : (product.image_url ? [product.image_url] : []));
+  // แสดงรูปสินค้าทั้งหมดเสมอ ลูกค้าเลื่อนดูรูปอื่นๆ ได้ตลอดแม้จะเลือกตัวเลือกไว้แล้ว —
+  // การเลือกตัวเลือกแค่ทำให้กระโดดไปที่รูปของตัวเลือกนั้น (ถ้ามีอยู่ในชุดรูปสินค้า) ไม่ได้ล็อกเหลือรูปเดียว
+  const images = (Array.isArray(product.image_urls) && product.image_urls.length)
+    ? product.image_urls
+    : (product.image_url ? [product.image_url] : []);
   const [imgIdx, setImgIdx] = useState(0);
-  useEffect(() => { setImgIdx(0); }, [selectedOptionId]);
+  useEffect(() => {
+    if (selectedOption && selectedOption.image_url) {
+      const idx = images.indexOf(selectedOption.image_url);
+      setImgIdx(idx >= 0 ? idx : 0);
+    } else {
+      setImgIdx(0);
+    }
+  }, [selectedOptionId]);
   const showGalleryNav = images.length > 1;
   const prevImg = () => setImgIdx(i => (i - 1 + images.length) % images.length);
   const nextImg = () => setImgIdx(i => (i + 1) % images.length);
@@ -900,7 +906,7 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
                       type="button"
                       key={o.id}
                       className={"option-chip" + (o.id === selectedOptionId ? " active" : "") + (stock <= 0 ? " disabled" : "")}
-                      onClick={() => setSelectedOptionId(o.id)}
+                      onClick={() => setSelectedOptionId(prev => prev === o.id ? null : o.id)}
                       disabled={stock <= 0}
                     >
                       {o.label}{stock <= 0 ? " (หมด)" : ""}
