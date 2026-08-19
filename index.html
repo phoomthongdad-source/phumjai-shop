@@ -392,6 +392,12 @@ var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,
   .shipping-method.active{ background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .shipping-method-name{ display:flex; align-items:center; gap:8px; }
   .shipping-method-price{ font-weight:700; }
+  .pickup-note{
+    display:flex; align-items:flex-start; gap:8px;
+    background: var(--bg-elev-2); border:1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; font-size: 12.5px; color: var(--text-dim); line-height:1.6;
+  }
+  .pickup-note svg{ flex-shrink:0; margin-top:2px; color: var(--accent); }
 
   .order-list{ display:flex; flex-direction:column; margin-bottom:10px; }
   .order-list-row{
@@ -485,7 +491,7 @@ logoImg.src = LOGO_URI;
 // ---- ค่าส่งและ PromptPay ----
 const PROMPTPAY_ID = "0983495551";
 const PROMPTPAY_NAME = "ภูมิพัฒน์ ทองดาษ";
-const SHIPPING_METHOD_LABELS = { flash: "Flash Express", ems: "EMS" };
+const SHIPPING_METHOD_LABELS = { flash: "Flash Express", ems: "EMS", pickup: "นัดรับสินค้าหน้าร้าน" };
 
 function formatPromptPayId(id){
   const digits = String(id).replace(/[^0-9]/g, "");
@@ -544,6 +550,7 @@ function promptPayQrDataUrl(amount){
 
 // คำนวณค่าส่งจากน้ำหนักรวม (กรัม) ตามตารางเรทที่แอดมินตั้งไว้ (shop_shipping_rates)
 function computeShippingCost(method, weightG, rates){
+  if (method === "pickup") return 0;
   const tiers = (rates || [])
     .filter(r => r.method === method)
     .sort((a, b) => (a.min_weight_g || 0) - (b.min_weight_g || 0));
@@ -719,6 +726,16 @@ function IconTruck(){
     </svg>
   );
 }
+function IconStore(){
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 9 L4.5 4 H19.5 L20.5 9" />
+      <path d="M3.5 9 A2.5 2.5 0 0 0 8.5 9 A2.5 2.5 0 0 0 13.5 9 A2.5 2.5 0 0 0 18.5 9 A2.5 2.5 0 0 0 20.5 9" />
+      <path d="M5 9.5 V20 H19 V9.5" />
+      <path d="M10 20 V14.5 H14 V20" />
+    </svg>
+  );
+}
 function IconUpload(){
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -814,10 +831,14 @@ function QuickAddModal({ product, cart, onConfirm, onClose }){
   }, [cartKey]);
 
   const atMax = qty >= effectiveStock;
-  const images = (Array.isArray(product.image_urls) && product.image_urls.length)
-    ? product.image_urls
-    : (product.image_url ? [product.image_url] : []);
+  const optionImage = (hasOptions && selectedOption && selectedOption.image_url) ? selectedOption.image_url : null;
+  const images = optionImage
+    ? [optionImage]
+    : ((Array.isArray(product.image_urls) && product.image_urls.length)
+      ? product.image_urls
+      : (product.image_url ? [product.image_url] : []));
   const [imgIdx, setImgIdx] = useState(0);
+  useEffect(() => { setImgIdx(0); }, [selectedOptionId]);
   const showGalleryNav = images.length > 1;
   const prevImg = () => setImgIdx(i => (i - 1 + images.length) % images.length);
   const nextImg = () => setImgIdx(i => (i + 1) % images.length);
@@ -933,11 +954,12 @@ function CartDrawer({ items, total, onInc, onDec, onCheckout, onClose }){
 }
 
 function CheckoutModal({ totalPrice, totalWeightG, shippingRates, shippingInfo, onChange, onClose, onNext }){
-  const methods = ["flash", "ems"];
+  const methods = ["flash", "ems", "pickup"];
   const costFor = (m) => computeShippingCost(m, totalWeightG, shippingRates);
   const shippingCost = costFor(shippingInfo.method);
   const grandTotal = totalPrice + shippingCost;
-  const valid = shippingInfo.name.trim() !== "" && shippingInfo.phone.trim() !== "" && shippingInfo.address.trim() !== "";
+  const isPickup = shippingInfo.method === "pickup";
+  const valid = shippingInfo.name.trim() !== "" && shippingInfo.phone.trim() !== "" && (isPickup || shippingInfo.address.trim() !== "");
 
   const set = (patch) => onChange({ ...shippingInfo, ...patch });
 
@@ -954,17 +976,9 @@ function CheckoutModal({ totalPrice, totalWeightG, shippingRates, shippingInfo, 
           <label>เบอร์โทร</label>
           <input type="tel" value={shippingInfo.phone} onChange={e => set({ phone: e.target.value })} placeholder="0xxxxxxxxx" />
         </div>
-        <div className="field">
-          <label>ที่อยู่จัดส่ง</label>
-          <textarea rows={3} value={shippingInfo.address} onChange={e => set({ address: e.target.value })} placeholder="บ้านเลขที่ / ถนน / ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์"></textarea>
-        </div>
-        <div className="field">
-          <label>หมายเหตุ (ถ้ามี)</label>
-          <input type="text" value={shippingInfo.note} onChange={e => set({ note: e.target.value })} placeholder="เช่น เวลาที่สะดวกรับพัสดุ" />
-        </div>
 
         <div className="option-group">
-          <div className="option-group-label">เลือกขนส่ง (น้ำหนักรวม {formatGrams(totalWeightG)} กรัม)</div>
+          <div className="option-group-label">เลือกการรับสินค้า (น้ำหนักรวม {formatGrams(totalWeightG)} กรัม)</div>
           <div className="shipping-methods">
             {methods.map(m => (
               <button
@@ -973,11 +987,27 @@ function CheckoutModal({ totalPrice, totalWeightG, shippingRates, shippingInfo, 
                 className={"shipping-method" + (shippingInfo.method === m ? " active" : "")}
                 onClick={() => set({ method: m })}
               >
-                <span className="shipping-method-name"><IconTruck /> {SHIPPING_METHOD_LABELS[m]}</span>
-                <span className="shipping-method-price">{formatBaht(costFor(m))}</span>
+                <span className="shipping-method-name">{m === "pickup" ? <IconStore /> : <IconTruck />} {SHIPPING_METHOD_LABELS[m]}</span>
+                <span className="shipping-method-price">{m === "pickup" ? "ฟรี" : formatBaht(costFor(m))}</span>
               </button>
             ))}
           </div>
+        </div>
+
+        {isPickup ? (
+          <div className="field">
+            <div className="pickup-note"><IconStore /> รับสินค้าที่หน้าร้านได้เลย ไม่มีค่าจัดส่ง กรุณานัดวัน-เวลาที่สะดวกในช่องด้านล่าง</div>
+          </div>
+        ) : (
+          <div className="field">
+            <label>ที่อยู่จัดส่ง</label>
+            <textarea rows={3} value={shippingInfo.address} onChange={e => set({ address: e.target.value })} placeholder="บ้านเลขที่ / ถนน / ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์"></textarea>
+          </div>
+        )}
+
+        <div className="field">
+          <label>{isPickup ? "นัดวัน-เวลารับสินค้า" : "หมายเหตุ (ถ้ามี)"}</label>
+          <input type="text" value={shippingInfo.note} onChange={e => set({ note: e.target.value })} placeholder={isPickup ? "เช่น วันเสาร์นี้ช่วงบ่าย" : "เช่น เวลาที่สะดวกรับพัสดุ"} />
         </div>
 
         <div className="cart-summary">
@@ -1059,15 +1089,17 @@ function OrderModal({ items, total, shippingInfo, shippingCost, qrDataUrl, onClo
             </div>
 
             <div className="order-address-block">
-              <div className="order-address-label">จัดส่งไปที่</div>
+              <div className="order-address-label">{shippingInfo.method === "pickup" ? "รับสินค้าที่หน้าร้าน" : "จัดส่งไปที่"}</div>
               <div className="order-address-name">{shippingInfo.name} · {shippingInfo.phone}</div>
-              <div className="order-address-text">{shippingInfo.address}</div>
-              {shippingInfo.note && <div className="order-address-note">หมายเหตุ: {shippingInfo.note}</div>}
+              {shippingInfo.method !== "pickup" && <div className="order-address-text">{shippingInfo.address}</div>}
+              {shippingInfo.note && (
+                <div className="order-address-note">{shippingInfo.method === "pickup" ? "นัดรับ: " : "หมายเหตุ: "}{shippingInfo.note}</div>
+              )}
             </div>
 
             <div className="order-cost-row">
               <span>ค่าส่ง ({SHIPPING_METHOD_LABELS[shippingInfo.method]})</span>
-              <span>{formatBaht(shippingCost)}</span>
+              <span>{shippingInfo.method === "pickup" ? "ฟรี" : formatBaht(shippingCost)}</span>
             </div>
             <div className="cart-summary">
               <div className="label">ยอดรวมทั้งหมด</div>
@@ -1305,7 +1337,7 @@ function App(){
         {showHelp && (
           <div className="help-panel">
             <div className="help-panel-inner">
-              <p>แตะที่สินค้าเพื่อเลือกจำนวนแล้วกดเครื่องหมายถูกเพื่อใส่ตะกร้า จากนั้นกดไอคอนตะกร้ามุมขวาบน กรอกที่อยู่จัดส่งและเลือกขนส่ง (Flash Express / EMS) จะเห็นสรุปคำสั่งซื้อพร้อม QR PromptPay ให้สแกนจ่ายยอดที่ต้องโอน จากนั้นอัปโหลดรูปสลิปการโอนเงินแล้วกด "ส่งข้อมูลให้ร้าน" ระบบจะส่งที่อยู่จัดส่งและสลิปเข้าอีเมลร้านให้อัตโนมัติ ไม่ต้องแชทแจ้งร้านเองอีก</p>
+              <p>แตะที่สินค้าเพื่อเลือกตัวเลือก (ถ้ามี) และจำนวนแล้วกดเครื่องหมายถูกเพื่อใส่ตะกร้า จากนั้นกดไอคอนตะกร้ามุมขวาบน กรอกชื่อ-เบอร์โทร แล้วเลือกวิธีรับสินค้า (Flash Express / EMS / นัดรับสินค้าหน้าร้าน — ไม่มีค่าจัดส่ง) จะเห็นสรุปคำสั่งซื้อพร้อม QR PromptPay ให้สแกนจ่ายยอดที่ต้องโอน จากนั้นอัปโหลดรูปสลิปการโอนเงินแล้วกด "ส่งข้อมูลให้ร้าน" ระบบจะส่งข้อมูลการรับสินค้าและสลิปเข้าอีเมลร้านให้อัตโนมัติ ไม่ต้องแชทแจ้งร้านเองอีก</p>
               <button className="help-panel-close" onClick={() => setShowHelp(false)} aria-label="ปิด"><IconClose /></button>
             </div>
           </div>
